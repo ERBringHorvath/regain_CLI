@@ -79,6 +79,7 @@ def main():
     matrix_parser.add_argument('--max', type=int, help='Maximum allowed gene occurrences')
     matrix_parser.add_argument('-o', '--output', required=True, help='Output of final presence/absence matrix')
     matrix_parser.add_argument('--gene-type', required=True, choices=['resistance', 'virulence'], help='specify gene type: resistance, virulence')
+    matrix_parser.add_argument('--verbose', action='store_true', help='Report actual gene counts in data matrix. Overrides binary output')
 
     network_parser = subparsers.add_parser('network')
     network_parser.add_argument('-i', '--input', required=True, help='Input Network .RDS File')
