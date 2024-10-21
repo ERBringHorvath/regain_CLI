@@ -192,7 +192,7 @@ a custom set of gene queries, independent of ReGAIN Module 1
 `regain curate`
 
 `-d`, `--directory`, path to genome FASTA files <br />
-`-q`, `--query`, path to query files in protein FASTA format <br />
+`-q`, `--query`, path to query files containing amino acid sequences in FASTA format <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
 `--min`, minimum gene occurrence threshold <br />
 `--max`, maximum gene occurrence threshold (should be less than number of genomes, see NOTE below) <br />
