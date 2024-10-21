@@ -68,7 +68,7 @@ def run(args):
         if gene_type == 'resistance':
             combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT']))]
         elif gene_type == 'virulence':
-            combined_csv = combined_csv[combined_csv['Element subtype'].isin(['VIRULENCE', 'HEAT', 'ACID'])
+            combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['VIRULENCE', 'HEAT', 'ACID']))]
         elif gene_type == 'all':
             combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT', 'VIRULENCE', 'HEAT', 'ACID']))]
     else:
