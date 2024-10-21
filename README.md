@@ -245,9 +245,9 @@ manual validation of gene calls is performed
 
 ## **ReGAIN Combine**
 
-ReGAIN Combine is an optional module for use in combination with the ReGAIN Curate and ReGAIN AMR modules. In the <br />
-event users want to supplement the `regain AMR` results with a custom set of genes queried through `regain curate`, <br />
-`regain combine` will merge both datasets into a single dataset for use in ReGAIN statistical modules
+ReGAIN Combine is an optional module for use in combination with the ReGAIN Curate and ReGAIN AMR modules. <br />
+In the event users want to supplement the `regain AMR` results with a custom set of genes queried through <br />
+`regain curate`, `regain combine` will merge both datasets into a single dataset for use in ReGAIN statistical modules
 
 `regain combine`
 
