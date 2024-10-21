@@ -44,7 +44,7 @@ Download ARMfinderPlus Database
 
 Download ReGAIN to preferred directory
 
-`git clone https://github.com/ERBringHorvath/regain_cl`
+`git clone https://github.com/ERBringHorvath/regain_CLI`
 
 Install Python dependencies
 
