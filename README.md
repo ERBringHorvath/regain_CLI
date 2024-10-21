@@ -238,16 +238,16 @@ Nucleotide sequences are extracted to a multi-FASTA file
 
 `regain extract -c /path/to/results/csv -f /path/to/genome/FASTA/files -T 8 -o sequences.fa`
 
-NOTE: the `--translate` flag should be used with care. In the event an alignment returns an incomplete CDS, ReGAIN Extract <br />
-will trim the sequence to the closest value divisible by 3 for codon prediction, which can result in frameshifts. <br />
-`--translate` is only suggested for use if returned alignments represent full coding sequences, or manual validation of gene <br /> 
-calls is performed
+NOTE: the `--translate` flag should be used with care. In the event an alignment returns an incomplete CDS, <br />
+ReGAIN Extract will trim the sequence to the closest value divisible by 3 for codon prediction, which can result <br />
+in frameshifts. `--translate` is only suggested for use if returned alignments represent full coding sequences, or <br />
+manual validation of gene calls is performed
 
 ## **ReGAIN Combine**
 
-ReGAIN Combine is an optional module for use in combination with the ReGAIN Curate and ReGAIN AMR modules. In the event users <br />
-want to supplement the `regain AMR` results with a custom set of genes queried through `regain curate`, `regain combine` will <br />
-merge both datasets into a single dataset for use in ReGAIN statistical modules
+ReGAIN Combine is an optional module for use in combination with the ReGAIN Curate and ReGAIN AMR modules. In the <br />
+event users want to supplement the `regain AMR` results with a custom set of genes queried through `regain curate`, <br />
+`regain combine` will merge both datasets into a single dataset for use in ReGAIN statistical modules
 
 `regain combine`
 
