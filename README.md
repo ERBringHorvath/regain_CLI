@@ -285,7 +285,7 @@ ________________________________________________________________________________
 
 `regain network -i network.rds -d matrix_filtered.csv -M metadata.csv -s Results.csv`
 
-This analysis is part of the `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed
+This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed
 
 **Output:**
 
