@@ -327,7 +327,7 @@ ________________________________________________________________________________
 
 # Citing ReGAIN
 
-Resistance Gene Association and Inference Network (ReGAIN): A Bioinformatics Pipeline for Assessing Probabilistic Co-Occurrence <br />
-Between Resistance Genes in Bacterial Pathogens <br />
+Resistance Gene Association and Inference Network (ReGAIN): A Bioinformatics Pipeline for Assessing Probabilistic 
+Co-Occurrence Between Resistance Genes in Bacterial Pathogens <br />
 Elijah R. Bring Horvath, Mathew G. Stein, Matthew A Mulvey, Edgar Javier Hernandez, Jaclyn M. Winter <br />
 *bioRxiv* 2024.02.26.582197; doi: https://doi.org/10.1101/2024.02.26.582197
