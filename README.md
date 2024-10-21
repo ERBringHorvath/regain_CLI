@@ -290,7 +290,6 @@ This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but se
 **Output:**
 
 `Bayesian_Network.html`, interactive Bayesian network
-
 _________________________________________________________________________________
 
 **Multidimensional Analyses**
