@@ -171,7 +171,7 @@ Module 2 `regain bnL` or `regain bnS`
 
 For less than 100 genes:
 
-`regain bnS regain bnS -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 100`
+`regain bnS -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 100`
                                             
 For 100 or more genes:
 
