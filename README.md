@@ -220,8 +220,8 @@ Best practice is for *N* genomes, `--max` should MINIMALLY be defined as *N* - 1
 ## **ReGAIN Extract**
 
 ReGAIN Extract is an optional module for use with ReGAIN Curate. This module extracts aligned sequences <br /> 
-identified from `regain curate`. Offered as an additional quality control <br /> step for gene identification. <br />
-Nucleotide equences are extracted to a multi-FASTA file
+identified from `regain curate`. Offered as an additional quality control step for gene identification. <br />
+Nucleotide sequences are extracted to a multi-FASTA file
 
 `regain extract`
 
