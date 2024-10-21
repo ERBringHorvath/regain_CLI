@@ -291,6 +291,8 @@ This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but se
 
 `Bayesian_Network.html`, interactive Bayesian network
 
+_________________________________________________________________________________
+
 **Multidimensional Analyses**
 
 Optional Module 3 `regain MVA`
