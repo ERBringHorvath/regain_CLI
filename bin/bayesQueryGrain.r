@@ -82,7 +82,10 @@ probs_list <- vector("list", max_combinations * length(boosts_list))
 risk_list <- vector("list", max_combinations * length(boosts_list))
 
 ###Function to query the network
-compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
+compute_gene_stats <- function(gene1, gene2, grain_net, epsilon, query_number = 1) {
+  if (query_number %% 1000 == 0) {
+    message(sprintf("Calculated %d", query_number))
+  }
   
   ##Compute conditional probability
   P_ij <- querygrain(setEvidence(grain_net, nodes = c(gene1), states = c("1"), propagate = TRUE), nodes = gene2)[[1]][2]
@@ -107,6 +110,7 @@ cat(paste("\n \033[32mNumber of queries:\033[39m", n_queries, "\n"))
 cat("\n \033[35mQuerying network. Please be patient.\033[39m\n \n")
 
 ##Execute queries
+counter <- 1
 results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %dopar% {
   gene1 <- combinations$Gene_1[i]
   gene2 <- combinations$Gene_2[i]
@@ -115,9 +119,10 @@ results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %d
   
   for (bn in boosts_list) {
     grain_net <- compile(as.grain(bn), propagate = TRUE)
-    res <- compute_gene_stats(gene1, gene2, grain_net, epsilon)
+    res <- compute_gene_stats(gene1, gene2, grain_net, epsilon, query_number = counter)
     temp_probs <- c(temp_probs, list(res$probs_data))
     temp_risk <- c(temp_risk, list(res$risk_data))
+    counter <<- counter + 1
   }
   
   list(probs_data = do.call(rbind, temp_probs), risk_data = do.call(rbind, temp_risk))
