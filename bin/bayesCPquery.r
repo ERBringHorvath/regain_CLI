@@ -81,7 +81,10 @@ max_combinations <- nrow(combinations)
 probs_list <- vector("list", max_combinations * length(boosts_list))
 risk_list <- vector("list", max_combinations * length(boosts_list))
 
-compute_gene_stats <- function(gene1, gene2, bn, epsilon) {
+compute_gene_stats <- function(gene1, gene2, bn, epsilon, query_number = 1) {
+  if (query_number %% 1000 == 0) {
+    message(sprintf("Calculated %d", query_number))
+  }
   ##Compute conditional probability
   P_ij <- cpquery(bn, 
                   event = eval(parse(text = paste0(gene1, ' == ', 1))),
@@ -117,7 +120,7 @@ for (i in 1:max_combinations) {
   gene2 <- combinations$Gene_2[i]
   
   for (bn in boosts_list) {
-    result <- compute_gene_stats(gene1, gene2, bn, epsilon)
+    result <- compute_gene_stats(gene1, gene2, bn, epsilon, query_number = counter)
     probs_list[[counter]] <- result$probs_data
     risk_list[[counter]] <- result$risk_data
     counter <- counter + 1
