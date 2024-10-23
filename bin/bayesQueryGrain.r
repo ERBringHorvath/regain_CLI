@@ -26,7 +26,7 @@ for (pkg in pkgs) {
 pkgs_b <- c('bnlearn', 'gRain')
 for (pkgs in pkgs_b) {
   if(!require(pkgs, character.only = TRUE)) {
-    BiocManager::instal(pkgs)
+    BiocManager::install(pkgs)
   }
 }
 
