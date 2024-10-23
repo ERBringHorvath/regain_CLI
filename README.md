@@ -61,11 +61,6 @@ Whatever the initial directory, this path should end with `/regain_CLI/bin`
 
 Save the file and restart your terminal or run `source ~/.bash_profile` or `source ~/.zshrc`
 
-ReGAIN utilizes shell scripts to execute some code. You may need to modify your permissions <br />
-to execute these scripts: 
-
-Navigate to `regain/bin`, then run `chmod +x *.sh` and `chmod +x regain`
-
 Verify installation:
 
 `regain --version`
@@ -73,6 +68,11 @@ Verify installation:
 use `-h`, `--help`, to bring up the help menu
 
 `regain --help`
+
+NOTE: ReGAIN utilizes shell scripts to execute some code. You may need to modify your permissions <br />
+to execute these scripts. If you see run `regain --version` and see: `permission denied: regain`: <br />
+Navigate to `regain/bin`, then run `chmod +x regain` and rerun `regain --version` and you should <br />
+see something similar to: `regain v.2.0.0`
 
 _________________________________________________________________________________
 
