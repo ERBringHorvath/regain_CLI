@@ -64,7 +64,7 @@ Save the file and restart your terminal or run `source ~/.bash_profile` or `sour
 ReGAIN utilizes shell scripts to execute some code. You may need to modify your permissions <br />
 to execute these scripts: 
 
-Navigate to `regain/bin`, then run `chmod +x *.sh`
+Navigate to `regain/bin`, then run `chmod +x *.sh` and `chmod +x regain`
 
 Verify installation:
 
