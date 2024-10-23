@@ -70,8 +70,8 @@ use `-h`, `--help`, to bring up the help menu
 `regain --help`
 
 NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions <br />
-to execute these scripts. If you run `regain --version` and see `permission denied: regain`: <br />
-Navigate to `regain/bin`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --version` <br />
+to execute these scripts. If you run `regain --version` and see `permission denied: regain`, Navigate to <br />
+`regain/bin`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --version` <br />
 and you should see something similar to: `regain v.2.0.0`
 
 _________________________________________________________________________________
