@@ -15,20 +15,29 @@ print(paste("Number of Threads:", threads))
 print(paste("Number of Bootstraps:", args[5]))
 print(paste("Number of Resamples:", args[6]))
 
-# Install required packages if not already installed
-pkgs <- c('dplyr', 'parallel', 'pbapply', 'BiocManager', 'RColorBrewer', 'visNetwork', 'igraph', 'doParallel', 'foreach')
-for (pkg in pkgs) {
-  if(!require(pkg, character.only = TRUE)) {
-    install.packages(pkg)
-  }
-}
+options(repos = c(CRAN = "https://cloud.r-project.org"), dplyr.summarise.inform = FALSE)
 
-pkgs_b <- c('bnlearn', 'gRain')
-for (pkgs in pkgs_b) {
-  if(!require(pkgs, character.only = TRUE)) {
-    BiocManager::install(pkgs)
-  }
-}
+pkgs <- c('dplyr', 'parallel', 'pbapply', 'BiocManager', 'RColorBrewer', 'visNetwork', 'igraph', 'reshape2', 'doParallel', 'scales')
+missing_pkgs <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
+
+bioc_pkgs <- c('bnlearn', 'gRain', 'progressr', 'graph')
+missing_bioc_pkgs <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
+if (length(missing_bioc_pkgs) > 0) BiocManager::install(missing_bioc_pkgs)
+
+library(dplyr)
+library(parallel)
+library(doParallel)
+library(pbapply)
+library(BiocManager)
+library(RColorBrewer)
+library(visNetwork)
+library(igraph)
+library(reshape2)
+library(bnlearn)
+library(gRain)
+library(graph)
+library(scales)
 
 data <- read.csv(input_file, row.names = 1)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
@@ -83,10 +92,7 @@ probs_list <- vector("list", max_combinations * length(boosts_list))
 risk_list <- vector("list", max_combinations * length(boosts_list))
 
 ###Function to query the network
-compute_gene_stats <- function(gene1, gene2, grain_net, epsilon, query_number = 1) {
-  if (query_number %% 1000 == 0) {
-    message(sprintf("Calculated %d", query_number))
-  }
+compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
   
   ##Compute conditional probability
   P_ij <- querygrain(setEvidence(grain_net, nodes = c(gene1), states = c("1"), propagate = TRUE), nodes = gene2)[[1]][2]
@@ -110,8 +116,7 @@ cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
 cat(paste("\n \033[32mNumber of queries:\033[39m", n_queries, "\n"))
 cat("\n \033[35mQuerying network. Please be patient.\033[39m\n \n")
 
-##Execute queries
-counter <- 1
+#Execute queries
 results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %dopar% {
   gene1 <- combinations$Gene_1[i]
   gene2 <- combinations$Gene_2[i]
@@ -120,10 +125,9 @@ results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %d
   
   for (bn in boosts_list) {
     grain_net <- compile(as.grain(bn), propagate = TRUE)
-    res <- compute_gene_stats(gene1, gene2, grain_net, epsilon, query_number = counter)
+    res <- compute_gene_stats(gene1, gene2, grain_net, epsilon)
     temp_probs <- c(temp_probs, list(res$probs_data))
     temp_risk <- c(temp_risk, list(res$risk_data))
-    counter <<- counter + 1
   }
   
   list(probs_data = do.call(rbind, temp_probs), risk_data = do.call(rbind, temp_risk))
@@ -132,9 +136,6 @@ results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %d
 # Combine the results after parallel processing
 probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
 risk_data <- do.call(rbind, lapply(results, `[[`, "risk_data"))
-
-# Stop the parallel backend
-stopImplicitCluster()
 
 # Compute statistics for conditional probabilities
 probs_stats <- probs_data %>%
@@ -215,10 +216,10 @@ write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
 ##Stop cluster
 parallel::stopCluster(cl)
-cat("\n \033[032mStatistics calculated.\033[39m \n")
+cat(" \033[032mStatistics calculated.\033[39m \n")
 
 ## Prepare data for the network visualization
-net <- igraph.from.graphNEL(as.graphNEL(avg_boot))
+net <- graph_from_graphnel(as.graphNEL(avg_boot))
 
 # Check if the network has enough nodes and edges
 if(vcount(net) < 2 || ecount(net) == 0) {
