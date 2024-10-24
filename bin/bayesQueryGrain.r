@@ -35,6 +35,7 @@ d_fact <- data %>% mutate_if(is.numeric, as.factor)
 
 n_cores <- threads
 cl = parallel::makeCluster(n_cores)
+on.exit(stopCluster(cl))
 clusterSetRNGStream(cl, 13245)
 
 required_bootstraps = number_of_bootstraps
