@@ -216,7 +216,7 @@ post_hoc <- na.omit(post_hoc)
 
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
-cat(" \033[032mStatistics calculated.\033[39m \n")
+cat("\n \033[032mStatistics calculated.\033[39m \n")
 
 ## Prepare data for the network visualization
 net <- graph_from_graphnel(as.graphNEL(avg_boot))
