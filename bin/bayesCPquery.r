@@ -15,20 +15,29 @@ print(paste("Number of Threads:", threads))
 print(paste("Number of Bootstraps:", args[5]))
 print(paste("Number of Resamples:", args[6]))
 
-# Install required packages if not already installed
-pkgs <- c('dplyr', 'parallel', 'pbapply', 'BiocManager', 'RColorBrewer', 'visNetwork', 'igraph', 'reshape2')
-for (pkg in pkgs) {
-  if(!require(pkg, character.only = TRUE)) {
-    install.packages(pkg)
-  }
-}
+options(repos = c(CRAN = "https://cloud.r-project.org"), dplyr.summarise.inform = FALSE)
 
-pkgs_b <- c('bnlearn', 'gRain')
-for (pkgs in pkgs_b) {
-  if(!require(pkgs, character.only = TRUE)) {
-    BiocManager::install(pkgs)
-  }
-}
+pkgs <- c('dplyr', 'parallel', 'pbapply', 'BiocManager', 'RColorBrewer', 'visNetwork', 'igraph', 'reshape2', 'doParallel', 'scales')
+missing_pkgs <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
+
+bioc_pkgs <- c('bnlearn', 'gRain', 'progressr', 'graph')
+missing_bioc_pkgs <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
+if (length(missing_bioc_pkgs) > 0) BiocManager::install(missing_bioc_pkgs)
+
+library(dplyr)
+library(parallel)
+library(doParallel)
+library(pbapply)
+library(BiocManager)
+library(RColorBrewer)
+library(visNetwork)
+library(igraph)
+library(reshape2)
+library(bnlearn)
+library(gRain)
+library(graph)
+library(scales)
 
 data <- read.csv(input_file, row.names = 1)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
@@ -84,7 +93,7 @@ risk_list <- vector("list", max_combinations * length(boosts_list))
 
 compute_gene_stats <- function(gene1, gene2, bn, epsilon, query_number = 1) {
   if (query_number %% 1000 == 0) {
-    message(sprintf("Calculated %d", query_number))
+    message(sprintf("Gene queries calculated: %d", query_number))
   }
   ##Compute conditional probability
   P_ij <- cpquery(bn, 
@@ -207,12 +216,10 @@ post_hoc <- na.omit(post_hoc)
 
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
-##Stop cluster
-parallel::stopCluster(cl)
-cat("\n \033[032mStatistics calculated.\033[39m \n")
+cat(" \033[032mStatistics calculated.\033[39m \n")
 
 ## Prepare data for the network visualization
-net <- igraph.from.graphNEL(as.graphNEL(avg_boot))
+net <- graph_from_graphnel(as.graphNEL(avg_boot))
 
 # Check if the network has enough nodes and edges
 if(vcount(net) < 2 || ecount(net) == 0) {
