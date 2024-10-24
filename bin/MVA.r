@@ -6,15 +6,18 @@ dist_method <- args[2] ## manhattan, euclidean, canberra, clark, bray, kulczynsk
 num_centers <- as.integer(args[3])
 confidence <- as.numeric(args[4])
 
-pkgs <- c('vegan', 'ggplot2', 'tidyr', 'dplyr', 'ellipse', 'tibble')
-for (pkg in pkgs) {
-  suppressMessages({
-    if (!require(pkg, character.only=TRUE)) {
-      install.packages(pkg)
-      suppressMessages(library(pkg, character.only=TRUE))
-    }
-  })
-}
+options(repos = c(CRAN = "https://cloud.r-project.org"), dplyr.summarise.inform = FALSE)
+
+pkgs <- c('dplyr', 'tidyr', 'vegan', 'ellipse', 'tibble', 'ggplot2')
+missing_pkgs <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
+
+library(dplyr)
+library(vegan)
+library(ggplot2)
+library(tidyr)
+library(ellipse)
+library(tibble)
 
 allowed_methods <- c('manhattan', 'euclidean', 'canberra', 'clark', 'bray', 
                      'kulczynski', 'jaccard', 'gower', 'altGower', 'morisita', 
