@@ -133,6 +133,8 @@ results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %d
   list(probs_data = do.call(rbind, temp_probs), risk_data = do.call(rbind, temp_risk))
 }
 
+parallel::stopCluster(cl)
+
 # Combine the results after parallel processing
 probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
 risk_data <- do.call(rbind, lapply(results, `[[`, "risk_data"))
