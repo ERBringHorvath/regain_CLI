@@ -57,6 +57,8 @@ boot = boot.strength(data = d_fact, R = number_of_bootstraps, algorithm = "hc",
 output_boot <- ifelse(grepl("\\.rds$", args[3]), args[3], paste0(args[3], ".rds"))
 saveRDS(boot, file = output_boot)
 
+parallel::stopCluster(cl)
+
 averaged.network(boot)
 avg_boot = averaged.network(boot, threshold = 0.5)
 arcs(avg_boot) <- directed.arcs(avg_boot)
