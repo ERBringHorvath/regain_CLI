@@ -43,9 +43,9 @@ data <- read.csv(input_file, row.names = 1)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
 
 n_cores <- threads
-cl = parallel::makeCluster(n_cores)
+cl <- parallel::makeCluster(n_cores)
 on.exit(stopCluster(cl))
-clusterSetRNGStream(cl, 13245)
+registerDoParallel(cl)
 
 required_bootstraps = number_of_bootstraps
 
@@ -111,13 +111,12 @@ compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
 
 n_queries <- (N * (N - 1) * Nlists)
 
-registerDoParallel(cores = n_cores)
 cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
 cat(paste("\n \033[32mNumber of queries:\033[39m", n_queries, "\n"))
 cat("\n \033[35mQuerying network. Please be patient.\033[39m\n \n")
 
 #Execute queries
-results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %dopar% {
+results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr", "gRain")) %dopar% {
   gene1 <- combinations$Gene_1[i]
   gene2 <- combinations$Gene_2[i]
   temp_probs <- list()
@@ -132,8 +131,6 @@ results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr")) %d
   
   list(probs_data = do.call(rbind, temp_probs), risk_data = do.call(rbind, temp_risk))
 }
-
-parallel::stopCluster(cl)
 
 # Combine the results after parallel processing
 probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
@@ -217,7 +214,7 @@ post_hoc <- na.omit(post_hoc)
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
 ##Stop cluster
-parallel::stopCluster(cl)
+stopImplicitCluster()
 cat(" \033[032mStatistics calculated.\033[39m \n")
 
 ## Prepare data for the network visualization
