@@ -12,7 +12,7 @@ Python (version 3.8 or higher)
 
 R (version 4 or higher)
 
-NCBI AMRfinderPlus <br />
+NCBI AMRfinderPlus version 4.0.3 <br />
 NCBI BLAST+ (Included in AMRfinderPlus installation)
 
 [Install R](https://www.r-project.org/)
