@@ -64,22 +64,23 @@ def run(args):
 
     #Filter combined data based on gene type
     gene_type = args.gene_type.lower()
-    if 'Element subtype' in combined_csv.columns:
+    if 'Subtype' in combined_csv.columns:
         if gene_type == 'resistance':
-            combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT']))]
+            combined_csv = combined_csv[(combined_csv['Subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT']))]
         elif gene_type == 'virulence':
-            combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['VIRULENCE', 'HEAT', 'ACID']))]
+            combined_csv = combined_csv[(combined_csv['Subtype'].isin(['VIRULENCE', 'HEAT', 'ACID']))]
         elif gene_type == 'all':
-            combined_csv = combined_csv[(combined_csv['Element subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT', 'VIRULENCE', 'HEAT', 'ACID']))]
+            combined_csv = combined_csv[(combined_csv['Subtype'].isin(['AMR', 'METAL', 'BIOCIDE', 'POINT', 'VIRULENCE', 'HEAT', 'ACID']))]
     else:
         raise ValueError("\n \033[91mError with CSV file header\033[0m\n")
     
-    combined_csv = combined_csv.drop_duplicates(subset=['Gene symbol'])
+    combined_csv = combined_csv.drop_duplicates(subset=['Element symbol'])
 
     #Create metadata file
-    metadata_df = combined_csv[['Gene symbol', 'Class']].copy()
-    metadata_df.columns = ['Gene', 'GeneClass']
+    metadata_df = combined_csv[['Element symbol', 'Class', 'Subclass']].copy()
+    metadata_df.columns = ['Gene', 'GeneClass', 'GeneSubClass']
     metadata_df['GeneClass'] = metadata_df['GeneClass'].fillna('virulence').astype(str).str.title()
+    metadata_df['GeneSubClass'] = metadata_df['GeneSubClass'].fillna('virulence').astype(str).str.title()
 
     #Create data matrix using unmodified gene names
     csv_files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.csv')]
