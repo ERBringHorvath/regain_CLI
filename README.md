@@ -90,24 +90,33 @@ Module 1.0 `regain AMR`
 **Currently supported organisms and how they should be called:**
 
 `Acinetobacter_baumannii` <br />
-`Burkholderia_cepacia` <br />
-`Burkholderia_pseudomallei` <br />
-`Campylobacter` <br />
-`Clostridioides_difficile` <br />
-`Enterobacter_cloacae` <br />
-`Enterococcus_faecalis` <br />
-`Enterococcus_faecium` <br />
-`Escherichia` <br />
-`Klebsiella_pneumoniae` <br />
-`Neisseria` <br />
-`Pseudomonas_aeruginosa` <br />
-`Salmonella` <br />
-`Staphylococcus_aureus` <br />
-`Staphylococcus_pseudintermedius` <br />
-`Streptococcus_agalactiae` <br />
-`Streptococcus_pneumoniae` <br />
-`Streptococcus_pyogenes` <br />
-`Vibrio_cholerae`
+`Burkholderia_cepacia`<br />
+`Burkholderia_pseudomallei`<br />
+`Citrobacter_freundii`<br />
+`Corynebacterium_diphtheriae`<br />
+`Campylobacter`<br />
+`Clostridioides_difficile`<br />
+`Enterobacter_cloacae`<br />
+`Enterobacter_asburiae`<br />
+`Enterococcus_faecalis`<br />
+`Enterococcus_faecium`<br />
+`Escherichia`<br />
+`Haemophilus_influenzae`<br />
+`Klebsiella_oxytoca`<br />
+`Klebsiella_pneumoniae`<br />
+`Neisseria_gonorrhoeae`<br />
+`Neisseria_meningitidis`<br />
+`Pseudomonas_aeruginosa`<br />
+`Salmonella`<br />
+`Serratia_marcescens`<br />
+`Staphylococcus_aureus`<br />
+`Staphylococcus_pseudintermedius`<br />
+`Streptococcus_agalactiae`<br />
+`Streptococcus_pneumoniae`<br />
+`Streptococcus_pyogenes`<br />
+`Vibrio_cholerae`<br />
+`Vibrio_vulnificus`<br />
+`Vibrio_parahaemolyticus`<br />
 
 **Module 1 example usage:**
 
