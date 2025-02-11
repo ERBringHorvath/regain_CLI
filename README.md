@@ -318,7 +318,7 @@ Optional Module 3 `regain MVA`
                                            
 `-i`, `--input`, input file in CSV format <br />
 `-m`, `--method`, measure of distance method <br />
-`-c`, `--centers`, how many centers you want for your multidimensional analysis (1-10) <br />
+`-c`, `--centers`, number of centers (1-10) <br />
 `-C`, `--confidence`, confidence interval for ellipses <br />
                                        
 **Module 3 example usage:**
