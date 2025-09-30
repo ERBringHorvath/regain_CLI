@@ -6,17 +6,22 @@ suppressPackageStartupMessages({
 options(repos = c(CRAN = "https://cloud.r-project.org"),
         dplyr.summarise.inform = FALSE)
 
+## ---- CLI ----
 opt_list <- list(
   make_option(c("-i","--input"), type="character", help="Input matrix CSV (row.names in col 1)"),
   make_option(c("-M","--metadata"), type="character", help="Metadata CSV (two columns: gene, class/label)"),
   make_option(c("-o","--output_boot"), type="character", help="Output bootstrapped network filename (.rds)"),
   make_option(c("-T","--threads"), type="integer", default=2, help="Threads [default: %default]"),
   make_option(c("-n","--number_of_bootstraps"), type="integer", help="Number of bootstraps (e.g., 300–500)"),
-  make_option(c("-r","--resamples"), type="integer", help="Number of resamples for querying")
+  make_option(c("-r","--resamples"), type="integer", help="Number of resamples for querying"),
+  make_option(c("-b","--blacklist"), type="character", default=NULL,
+              help="Optional blacklist CSV (no header): from,to"),
+  make_option(c("--iss"), type="integer", default=10,
+              help="Imaginary sample size for BDe score [default: %default]")
 )
 
 parser <- OptionParser(option_list = opt_list,
-  description = "ReGAIN — Bayesian network structure learning + gRain queries")
+                       description = "ReGAIN — Bayesian network structure learning + gRain queries")
 opt <- parse_args(parser)
 
 required <- c("input","metadata","output_boot","number_of_bootstraps","resamples")
@@ -25,6 +30,7 @@ if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
 }
 
+## ---- dependency check/install (same as before) ----
 pkgs <- c('dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork','igraph','reshape2','doParallel','scales')
 miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if (length(miss) > 0) install.packages(miss)
@@ -36,48 +42,87 @@ if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update =
 suppressPackageStartupMessages({
   library(dplyr); library(parallel); library(doParallel); library(pbapply)
   library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
-  library(bnlearn); library(gRain); library(graph); library(scales)
+  library(bnlearn); library(gRain); library(graph); library(scales); library(foreach)
 })
 
-# ---- inputs & echo ----
-input_file <- opt$input
+## ---- inputs & echo ----
+input_file  <- opt$input
 metadata_file <- opt$metadata
-output_boot  <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
-threads <- opt$threads
-number_of_bootstraps <- opt$number_of_bootstraps
-resamples <- opt$resamples
+output_boot <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
+threads     <- opt$threads
+nboots      <- opt$number_of_bootstraps
+resamples   <- opt$resamples
+iss         <- opt$iss
+blacklist_path <- opt$blacklist
 
 cat("User Inputs:\n")
 cat("  Matrix:               ", input_file, "\n")
 cat("  Metadata:             ", metadata_file, "\n")
 cat("  Bootstrapped Network: ", output_boot, "\n")
 cat("  Threads:              ", threads, "\n")
-cat("  # Bootstraps:         ", number_of_bootstraps, "\n")
+cat("  # Bootstraps:         ", nboots, "\n")
 cat("  # Resamples:          ", resamples, "\n")
+cat("  ISS (BDe):            ", iss, "\n")
+if (!is.null(blacklist_path)) cat("  Blacklist:            ", blacklist_path, "\n") else cat("  Blacklist:            (none)\n")
 
 stopifnot(file.exists(input_file), file.exists(metadata_file))
-data <- read.csv(input_file, row.names = 1, check.names = TRUE)
+data   <- read.csv(input_file, row.names = 1, check.names = TRUE)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
+vars   <- colnames(d_fact)
 
-# ---- parallel pool ----
+## ---- optional blacklist load & filter ----
+blacklist_filtered <- NULL
+if (!is.null(blacklist_path)) {
+  stopifnot(file.exists(blacklist_path))
+  bl <- read.csv(blacklist_path, header = FALSE, stringsAsFactors = FALSE, check.names = FALSE)
+  if (ncol(bl) < 2) stop("Blacklist must have 2 columns: from,to (no header).")
+  colnames(bl)[1:2] <- c("from","to")
+  # Keep only arcs whose endpoints are in the dataset
+  blacklist_filtered <- subset(bl, from %in% vars & to %in% vars)
+  cat("  Blacklist arcs (after filtering to present variables): ", nrow(blacklist_filtered), "\n")
+}
+
+## ---- parallel pool ----
 n_cores <- max(1, as.integer(threads))
 cl <- parallel::makeCluster(n_cores)
 on.exit(stopCluster(cl), add = TRUE)
 registerDoParallel(cl)
 
+## ---- bootstrap ----
 cat("\n \033[32mBootstrapping started.\033[39m\n\n")
+
+algo_args <- list(score = "bde", iss = iss)
+if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
+  # bnlearn expects a two-column data.frame with names 'from','to'
+  algo_args$blacklist <- blacklist_filtered[, c("from","to")]
+}
+
 boot <- boot.strength(
   data = d_fact,
-  R = number_of_bootstraps,
+  R = nboots,
   algorithm = "hc",
-  algorithm.args = list(score = "bde", iss = 10),
+  algorithm.args = algo_args,
   cluster = cl
 )
+
 saveRDS(boot, file = output_boot)
 
 avg_boot <- averaged.network(boot, threshold = 0.5)
 arcs(avg_boot) <- directed.arcs(avg_boot)
 
+## If blacklist provided, drop those arcs from the averaged network
+if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
+  avg_boot_clean <- avg_boot
+  for (i in seq_len(nrow(blacklist_filtered))) {
+    avg_boot_clean <- drop.arc(avg_boot_clean,
+                               from = blacklist_filtered$from[i],
+                               to   = blacklist_filtered$to[i]
+    )
+  }
+  avg_boot <- avg_boot_clean
+}
+
+## ---- prepare to query ----
 metadata <- read.csv(metadata_file, check.names = FALSE)
 gene_names <- metadata[,1]
 lookup <- setNames(as.character(metadata[,2]), metadata[,1])
@@ -93,30 +138,36 @@ boosts <- function(d_fact, Nlists, avg_boot) {
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 N <- length(valid_genes)
-epsilon <- ((N + 0.5) / (N + 1))
+epsilon <- ((N + 0.5) / (N + 1))  # note: currently cancels if multiplied both numerator/denominator
 
-combinations <- subset(expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes), Gene_1 != Gene_2)
-cat(paste("\n \033[32mNumber of genes in dataset:\033[39m", N, "\n"))
-max_combinations <- nrow(combinations)
+# All ordered pairs, excluding self-pairs
+combinations <- expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes)
+combinations <- subset(combinations, Gene_1 != Gene_2)
+
+# If a blacklist exists, remove those directed pairs from combinations
+if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
+  bl_keys <- paste(blacklist_filtered$from, blacklist_filtered$to, sep = "___")
+  combo_keys <- paste(combinations$Gene_1, combinations$Gene_2, sep = "___")
+  keep <- !(combo_keys %in% bl_keys)
+  combinations <- combinations[keep, , drop = FALSE]
+}
+
+cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
+cat(paste("\n \033[32mNumber of queries:\033[39m", nrow(combinations) * length(boosts_list), "\n"))
+cat("\n \033[35mQuerying network. Please be patient.\033[39m\n\n")
 
 compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
   P_ij <- querygrain(setEvidence(grain_net, nodes = gene1, states = "1", propagate = TRUE), nodes = gene2)[[1]][2]
   unexposed <- querygrain(setEvidence(grain_net, nodes = gene1, states = "0", propagate = TRUE), nodes = gene2)[[1]][2]
-
+  # NOTE on epsilon: if you intended smoothing, consider (P_ij + eps) / (unexposed + eps)
   relodds <- (P_ij * epsilon) / (unexposed * epsilon)
-
   list(
     probs_data = data.frame(Gene_1 = gene1, Gene_2 = gene2, Conditional_Probability = P_ij),
     risk_data  = data.frame(Gene_1 = gene1, Gene_2 = gene2, Relative_Risk = relodds)
   )
 }
 
-n_queries <- (N * (N - 1) * Nlists)
-cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
-cat(paste("\n \033[32mNumber of queries:\033[39m", n_queries, "\n"))
-cat("\n \033[35mQuerying network. Please be patient.\033[39m\n\n")
-
-results <- foreach(i = 1:max_combinations, .packages = c("bnlearn","dplyr","gRain")) %dopar% {
+results <- foreach(i = seq_len(nrow(combinations)), .packages = c("bnlearn","dplyr","gRain")) %dopar% {
   gene1 <- combinations$Gene_1[i]
   gene2 <- combinations$Gene_2[i]
   temp_probs <- vector("list", length(boosts_list))
@@ -158,6 +209,7 @@ risk_stats <- risk_data %>%
 stats <- full_join(probs_stats, risk_stats, by = c("Gene_1","Gene_2")) %>% na.omit()
 write.csv(stats, "Results.csv", row.names = FALSE)
 
+## ---- BDPS / Fold Change (unchanged) ----
 calculate_ratio <- function(stats, gene1, gene2) {
   prob1 <- stats %>% filter(Gene_1 == gene1, Gene_2 == gene2) %>% pull(Conditional_Probability_Mean)
   prob2 <- stats %>% filter(Gene_1 == gene2, Gene_2 == gene1) %>% pull(Conditional_Probability_Mean)
@@ -192,7 +244,7 @@ write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 stopImplicitCluster()
 cat(" \033[032mStatistics calculated.\033[39m \n")
 
-# ---- network viz ----
+## ---- network viz (unchanged logic, now using any cleaned avg_boot) ----
 net <- graph_from_graphnel(as.graphNEL(avg_boot))
 if (vcount(net) < 2 || ecount(net) == 0) stop("Network is too small or has no edges for visualization.")
 visZach <- toVisNetworkData(net)

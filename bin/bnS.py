@@ -13,6 +13,8 @@ def main():
     ap.add_argument("-T","--threads", type=int, default=2, help="Threads")
     ap.add_argument("-n","--number_of_bootstraps", required=True, type=int, help="Bootstrap number (e.g., 300–500)")
     ap.add_argument("-r","--number_of_resamples", required=True, type=int, help="Number of resamples for querying")
+    ap.add_argument("-b","--blacklist", help="Optional blacklist CSV (no header): from,to")
+    ap.add_argument("--iss", type=int, default=10, help="Imaginary sample size for BDe score (default: 10)")
     args, unknown = ap.parse_known_args()
 
     bash = shutil.which("bash")
@@ -32,9 +34,14 @@ def main():
         "--threads", str(args.threads),
         "--number_of_bootstraps", str(args.number_of_bootstraps),
         "--resamples", str(args.number_of_resamples),
+        "--iss", str(args.iss),
     ]
-    # forward unknown args to R for future-proofing
+    if args.blacklist:
+        cmd += ["--blacklist", args.blacklist]
+
+    # Forward any unknown future flags to R:
     cmd += unknown
+
     run(cmd)
 
 if __name__ == "__main__":
