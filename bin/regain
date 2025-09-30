@@ -84,7 +84,7 @@ def main():
     parser = argparse.ArgumentParser(prog='regain',
                                      description='ReGAIN: Resistance Gene Association and Inference Network',
                                      epilog=" \033[92mFor detailed instructions, visit: https://github.com/ERBringHorvath/regain_cl\033[0m")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s v.1.5.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s v.1.5.3')
 
     subparsers = parser.add_subparsers(dest='command')
     

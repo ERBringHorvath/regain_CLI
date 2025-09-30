@@ -19,55 +19,50 @@ NCBI BLAST+ (Included in AMRfinderPlus installation)
 
 _________________________________________________________________________________
 
+## Install ReGAIN Dependencies
 
 **We suggest that ReGAIN and all prerequisites are installed within a Conda environment**
 
 Download [miniforge](https://github.com/conda-forge/miniforge/)
 
-Create Conda environment and install [NCBI AMRfinderPlus](https://github.com/ncbi/amr/wiki/Install-with-bioconda)
+1. Create Conda environment and install [NCBI AMRfinderPlus](https://github.com/ncbi/amr/wiki/Install-with-bioconda)
+* `conda create -n regain python=3.10`
+* `source activate regain`
 
-`conda create -n regain python=3.10`
+2. Install AMRfinderPlus<br/>
+* `conda install -y -c conda-forge -c bioconda ncbi-amrfinderplus`
 
-`conda activate regain`
+3. Check installation
+* `amrfinder -h`
 
-Install AMRfinderPlus
+4. Download ARMfinderPlus Database
+* `amrfinder -u`
 
-`conda install -y -c conda-forge -c bioconda ncbi-amrfinderplus`
+5. Install NCBI BLAST+
+* `conda install -y -c bioconda::blast`
 
-Check installation
+## Install ReGAIN
 
-`amrfinder -h`
+6. Download ReGAIN to preferred directory
+* `git clone https://github.com/ERBringHorvath/regain_CLI`
 
-Download ARMfinderPlus Database
+7. Install Python dependencies
+* `pip install -r requirements.txt` or `pip3 install -r requirements.txt`
 
-`amrfinder -u`
-
-Download ReGAIN to preferred directory
-
-`git clone https://github.com/ERBringHorvath/regain_CLI`
-
-Install Python dependencies
-
-`pip install -r requirements.txt` or `pip3 install -r requirements.txt`
-
-Add ReGAIN to your PATH
-
-Add this line to the end of `.bash_profile`/`.bashrc` (Linux) or `.zshrc` (macOS):
+8. Add ReGAIN to your PATH
+* Add this line to the end of `.bash_profile`/`.bashrc` (Linux) or `.zshrc` (macOS):
 
 `export PATH="$PATH:/path/to/regain_CLI/bin"`
 
-Replace `/path/to/regain_CLI/bin` with the actual path to the directory containing the executable. <br />
+* Replace `/path/to/regain_CLI/bin` with the actual path to the directory containing the executable. <br />
 Whatever the initial directory, this path should end with `/regain_CLI/bin`
 
-Save the file and restart your terminal or run `source ~/.bash_profile` or `source ~/.zshrc`
+9. Save the file and restart your terminal or run `source ~/.bash_profile` or `source ~/.zshrc`
 
-Verify installation:
-
-`regain --version`
-
-use `-h`, `--help`, to bring up the help menu
-
-`regain --help`
+10. Verify installation:
+* `regain --version`
+* use `-h`, `--help`, to bring up the help menu
+* `regain --help`
 
 NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions <br />
 to execute these scripts. If you run `regain --version` and see `permission denied: regain`, Navigate to <br />
@@ -78,9 +73,9 @@ ________________________________________________________________________________
 
 # <ins>**Programs and Example Usage**</ins> 
 
-## **Resistance and Virulence Gene Identification** 
+# **Resistance and Virulence Gene Identification** 
 
-Module 1.0 `regain AMR`
+## Module 1.0 `regain AMR`
 
 `-d`, `--directory`, path to directory containing genome FASTA files to analyze <br />
 `-O`, `--organism`, optional; specify what organism (if any) you want to analyze (optional flag) <br />
@@ -132,11 +127,11 @@ One results file per submitted genome
 
 _________________________________________________________________________________
 
-## **Dataset Creation** 
+# **Dataset Creation** 
 
 **NOTE**: variable names <ins>**cannot**</ins> contain special characters–this transformation is automated during dataset creation <br />
 
-Module 1.1 `regain matrix`
+## Module 1.1 `regain matrix`
                                        
 `-d`, `--directory`, path to AMRfinder results in CSV format <br />
 `--gene-type`, searches for `resistance`, `virulence`, or `all` genes <br />
@@ -165,9 +160,9 @@ defined by** `-d`/`--directory`
 
 _________________________________________________________________________________
 
-## **Bayesian Network Structure Learning** 
+# **Bayesian Network Structure Learning** 
 
-Module 2 `regain bnL` or `regain bnS`
+## Module 2 `regain bnL` or `regain bnS`
                                             
 `-i`, `--input`, input file in CSV format <br />
 `-M`, `--metadata`, file containing gene names and descriptions <br />
@@ -175,10 +170,17 @@ Module 2 `regain bnL` or `regain bnS`
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
 `-n`, `--number_of_boostraps`, how many bootstraps to run (suggested 300-500) <br />
 `-r`, `--number-of-resamples`, how many data resamples you want to use (suggested 100) <br />
+`--blacklist`, pptional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
+`--iss`, maginary sample size for BDe score (default = 10) <br/>
+`--no-viz`, Skip HTML/PDF visualization
+
+**bnL only:**
+
+`--cp-samples`, Monte Carlo samples for cpquery (default: 10000)
 
 **Module 2 example usage:**
 
-**NOTE: We suggest using between 300 and 500 bootstraps and 100 resamples**
+**NOTE: We suggest using between a minimum of 300 to 500 bootstraps and 100 resamples**
 
 `bnS`, Bayesian network structure learning analysis for less than 100 genes <br />
 `bnL`, Bayesian network structure learning analysis for 100 genes or greater
@@ -193,10 +195,19 @@ For 100 or more genes:
 
 **Output files:**
 
-`Results.csv`, results file of all conditional probability and relative risk values <br />
+`Query_Results.csv`, results file of all conditional probability and relative risk values <br />
 `post_hoc_analysis.csv`, results file of all bidirectional probability and fold change scores <br />
 `Bayesian_Network.html`, interactive Bayesian network
+`Bayesian_Network.pdf`, static PDF of network using Fruchterman-Reingold force-directed layout algorithm
 
+**NOTE:**<br/>
+If using a blacklist, the CSV file should have no headers and only two columns. Column 1 should be your first variable in your variable pair to blacklist, and column 2 should be your second variable in the pair. Explicit bidirectional blacklisting must be passed, so if 'geneA' and 'geneB' are in the blacklist, they should be listed like:
+
+col1, col2 <br/>
+gene1, gene2 <br/>
+gene2, gene1
+
+Additionally, blacklists should be used with caution; ideally, only 'imposible' variables should be blacklisted. An example of this would be a gene with 2 different mutations at the same site (e.g., *gyrA_S83D* and *gyrA_S83E*). 
 _________________________________________________________________________________
 # **ReGAIN Curate**
 
@@ -284,7 +295,7 @@ In the event users want to supplement the `regain AMR` results with a custom set
 NOTE: in order for `regain combine` to function properly, do not modify values in column 1 (`file`) of the data matrix files
 
 _________________________________________________________________________________
-## **ReGAIN Accessary Modules**
+# **ReGAIN Accessary Modules**
 
 **Stand Alone Network Visualization**
 
@@ -308,9 +319,9 @@ ________________________________________________________________________________
 
 **Multidimensional Analyses**
 
-Optional Module 3 `regain MVA`
+## Optional Module 3 `regain MVA`
 
-**Currently supported measures of distance:**
+**Currently supported measures:**
 
 `manhattan`, `euclidean`, `canberra`, `clark`, `bray`, `kulczynski`, `jaccard`, `gower`, <br />
 `horn`, `mountford`, `raup`, `binomial`, `chao`, `cao`, `mahalanobis`, `altGower`, `morisita`, <br />

@@ -2,6 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+.Rhistory
+.Rproj.user/
+.ipynb_checkpoints/
+.DS_Store
+.vscode/
+.env
 
 # C extensions
 *.so
