@@ -1,47 +1,48 @@
-"""
-    ReGAIN Copyright 2024 University of Utah
-    
-    Performs Bayesian network structure learning on a given dataset to identify relationships between genes.
-    
-    This function applies either a small-scale (bnS) or large-scale (bnL) approach based on the dataset size,
-    utilizing bootstrapping and resampling techniques to validate the network's structure. It's designed
-    to handle genomic data, specifically presence/absence matrices, facilitating the understanding of complex
-    gene interactions and resistance mechanisms.
-    
-    Parameters:
-        input_file (str): CSV file containing the presence/absence matrix.
-        metadata_file (str): File containing gene names and descriptions.
-        output_bootstrap (str): Output file for bootstrap results.
-        threads (int): Number of CPU cores to use.
-        number_of_bootstraps (int): How many bootstrap iterations to perform.
-        number_of_resamples (int): Number of resamples for bootstrapping.
-    
-    Returns:
-        None
-"""
+#!/usr/bin/env python3
+import argparse, os, shutil, subprocess, sys
 
-import argparse
-import subprocess
-import os
+def run(cmd):
+    print("+ " + " ".join(cmd), flush=True)
+    subprocess.run(cmd, check=True)
 
-def run_bnL():
-    parser = argparse.ArgumentParser(description='Run Bayesian Network analysis')
-    parser.add_argument('-i', '--input', required=True, help='Input file in CSV format')
-    parser.add_argument('-M', '--metadata', required=True, help='Input metadata file with genes to query')
-    parser.add_argument('-o', '--output_boot', required=True, help='Output file name for Network')
-    parser.add_argument('-T', '--threads', type=int, help='Dedicated threads')
-    parser.add_argument('-n', '--number_of_bootstraps', type=int, help='Bootstrap number (ideally 300-500)')
-    parser.add_argument('-r', '--number_of_resamples', type=int, required=True, help='Input number of data resamples')
+def main():
+    ap = argparse.ArgumentParser(description="Run Bayesian Network analysis (large datasets, CPQuery)")
+    ap.add_argument("-i","--input", required=True, help="Input matrix CSV")
+    ap.add_argument("-M","--metadata", required=True, help="Metadata CSV")
+    ap.add_argument("-o","--output_boot", required=True, help="Output .rds (bootstrapped network)")
+    ap.add_argument("-T","--threads", type=int, default=2, help="Threads")
+    ap.add_argument("-n","--number_of_bootstraps", required=True, type=int, help="Bootstrap number (e.g., 300–500)")
+    ap.add_argument("-r","--number_of_resamples", required=True, type=int, help="Number of resamples for querying")
+    ap.add_argument("-b","--blacklist", help="Optional blacklist CSV (no header): from,to")
+    ap.add_argument("--iss", type=int, default=10, help="Imaginary sample size for BDe score (default: 10)")
+    args, unknown = ap.parse_known_args()
 
-    args = parser.parse_args()
+    bash = shutil.which("bash")
+    if not bash:
+        sys.exit("ERROR: bash not found in PATH")
 
-    # Get the directory of the current script
-    dir_of_executable = os.path.dirname(os.path.realpath(__file__))
-    path_to_shell_script = os.path.join(dir_of_executable, 'bnCPQuery.sh')
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    sh_path = os.path.join(script_dir, "bnCPQuery.sh")
+    if not os.path.exists(sh_path):
+        sys.exit(f"ERROR: cannot find {sh_path}")
 
-    # Construct the command to call the shell script
-    command = [path_to_shell_script, args.input, args.output_boot, str(args.threads), str(args.number_of_bootstraps), str(args.number_of_resamples), args.metadata]
-    subprocess.run(command)
+    cmd = [
+        bash, sh_path,
+        "--input", args.input,
+        "--metadata", args.metadata,
+        "--output_boot", args.output_boot,
+        "--threads", str(args.threads),
+        "--number_of_bootstraps", str(args.number_of_bootstraps),
+        "--resamples", str(args.number_of_resamples),
+        "--iss", str(args.iss),
+    ]
+    if args.blacklist:
+        cmd += ["--blacklist", args.blacklist]
+
+    # Forward any unknown extra flags to R
+    cmd += unknown
+
+    run(cmd)
 
 if __name__ == "__main__":
-    run_bnL()
+    main()

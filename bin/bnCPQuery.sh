@@ -1,8 +1,11 @@
-#!/bin/bash
-# bnCPQuery.sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Get the directory where the script is located
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+RSCRIPT="${RSCRIPT:-$(command -v Rscript || true)}"
+if [[ -z "${RSCRIPT}" ]]; then
+  echo "ERROR: Rscript not found in PATH" >&2
+  exit 127
+fi
 
-# Run the R script using its full path
-Rscript "$DIR/bayesCPquery.r" "$@"
+exec "${RSCRIPT}" "${SCRIPT_DIR}/bayesCPQuery.r" "$@"
