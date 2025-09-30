@@ -19,10 +19,19 @@ def run_bnL(args):
     subprocess.run(command)
 
 def run_bnS(args):
+    import os, subprocess
     dir_of_executable = os.path.dirname(os.path.realpath(__file__))
-    path_to_shell_script = os.path.join(dir_of_executable, 'bnQueryGrain.sh')
-    command = [path_to_shell_script, args.input, args.metadata, args.output_boot, str(args.threads), str(args.number_of_bootstraps), str(args.number_of_resamples)]
-    subprocess.run(command)
+    sh = os.path.join(dir_of_executable, 'bnQueryGrain.sh')
+    command = [
+        sh,
+        "--input", args.input,
+        "--metadata", args.metadata,
+        "--output_boot", args.output_boot,
+        "--threads", str(args.threads) if args.threads else "2",
+        "--number_of_bootstraps", str(args.number_of_bootstraps),
+        "--resamples", str(args.number_of_resamples),
+    ]
+    subprocess.run(command, check=True)
 
 def run_mva(args):
     dir_of_executable = os.path.dirname(os.path.realpath(__file__))

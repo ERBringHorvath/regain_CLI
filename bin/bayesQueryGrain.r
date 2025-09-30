@@ -1,294 +1,237 @@
-args <- commandArgs(trailingOnly = TRUE)
+#!/usr/bin/env Rscript
+suppressPackageStartupMessages({
+  library(optparse)
+})
 
-input_file <- args[1]
-metadata_file <- args[2]
-output_boot <- args[3]
-threads <- if (length(args) >= 4 && !is.na(as.integer(args[4]))) as.integer(args[4]) else 2
-number_of_bootstraps <- as.integer(args[5])
-resamples <- as.integer(args[6])
+options(repos = c(CRAN = "https://cloud.r-project.org"),
+        dplyr.summarise.inform = FALSE)
 
-print("User Inputs:")
-print(paste("Matrix:", args[1]))
-print(paste("Metadata:", args[2]))
-print(paste("Bootstrapped Network Name:", args[3]))
-print(paste("Number of Threads:", threads))
-print(paste("Number of Bootstraps:", args[5]))
-print(paste("Number of Resamples:", args[6]))
+opt_list <- list(
+  make_option(c("-i","--input"), type="character", help="Input matrix CSV (row.names in col 1)"),
+  make_option(c("-M","--metadata"), type="character", help="Metadata CSV (two columns: gene, class/label)"),
+  make_option(c("-o","--output_boot"), type="character", help="Output bootstrapped network filename (.rds)"),
+  make_option(c("-T","--threads"), type="integer", default=2, help="Threads [default: %default]"),
+  make_option(c("-n","--number_of_bootstraps"), type="integer", help="Number of bootstraps (e.g., 300–500)"),
+  make_option(c("-r","--resamples"), type="integer", help="Number of resamples for querying")
+)
 
-options(repos = c(CRAN = "https://cloud.r-project.org"), dplyr.summarise.inform = FALSE)
+parser <- OptionParser(option_list = opt_list,
+  description = "ReGAIN — Bayesian network structure learning + gRain queries")
+opt <- parse_args(parser)
 
-pkgs <- c('dplyr', 'parallel', 'pbapply', 'BiocManager', 'RColorBrewer', 'visNetwork', 'igraph', 'reshape2', 'doParallel', 'scales')
-missing_pkgs <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-if (length(missing_pkgs) > 0) install.packages(missing_pkgs)
+required <- c("input","metadata","output_boot","number_of_bootstraps","resamples")
+missing <- required[!nzchar(trimws(sapply(required, function(k) as.character(opt[[k]])))) ]
+if (length(missing)) {
+  print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
+}
 
-bioc_pkgs <- c('bnlearn', 'gRain', 'progressr', 'graph')
-missing_bioc_pkgs <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
-if (length(missing_bioc_pkgs) > 0) BiocManager::install(missing_bioc_pkgs)
+pkgs <- c('dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork','igraph','reshape2','doParallel','scales')
+miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if (length(miss) > 0) install.packages(miss)
 
-library(dplyr)
-library(parallel)
-library(doParallel)
-library(pbapply)
-library(BiocManager)
-library(RColorBrewer)
-library(visNetwork)
-library(igraph)
-library(reshape2)
-library(bnlearn)
-library(gRain)
-library(graph)
-library(scales)
+bioc_pkgs <- c('bnlearn','gRain','progressr','graph')
+miss_bioc <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
+if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update = FALSE)
 
-data <- read.csv(input_file, row.names = 1)
+suppressPackageStartupMessages({
+  library(dplyr); library(parallel); library(doParallel); library(pbapply)
+  library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
+  library(bnlearn); library(gRain); library(graph); library(scales)
+})
+
+# ---- inputs & echo ----
+input_file <- opt$input
+metadata_file <- opt$metadata
+output_boot  <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
+threads <- opt$threads
+number_of_bootstraps <- opt$number_of_bootstraps
+resamples <- opt$resamples
+
+cat("User Inputs:\n")
+cat("  Matrix:               ", input_file, "\n")
+cat("  Metadata:             ", metadata_file, "\n")
+cat("  Bootstrapped Network: ", output_boot, "\n")
+cat("  Threads:              ", threads, "\n")
+cat("  # Bootstraps:         ", number_of_bootstraps, "\n")
+cat("  # Resamples:          ", resamples, "\n")
+
+stopifnot(file.exists(input_file), file.exists(metadata_file))
+data <- read.csv(input_file, row.names = 1, check.names = TRUE)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
 
-n_cores <- threads
+# ---- parallel pool ----
+n_cores <- max(1, as.integer(threads))
 cl <- parallel::makeCluster(n_cores)
-on.exit(stopCluster(cl))
+on.exit(stopCluster(cl), add = TRUE)
 registerDoParallel(cl)
 
-required_bootstraps = number_of_bootstraps
-
-cat("\n \033[32mBootstrapping started.\033[39m\n \n")
-
-boot = boot.strength(data = d_fact, R = number_of_bootstraps, algorithm = "hc",
-                     algorithm.args = list(score="bde", iss=10), cluster = cl)
-
-output_boot <- ifelse(grepl("\\.rds$", args[3]), args[3], paste0(args[3], ".rds"))
+cat("\n \033[32mBootstrapping started.\033[39m\n\n")
+boot <- boot.strength(
+  data = d_fact,
+  R = number_of_bootstraps,
+  algorithm = "hc",
+  algorithm.args = list(score = "bde", iss = 10),
+  cluster = cl
+)
 saveRDS(boot, file = output_boot)
 
-averaged.network(boot)
-avg_boot = averaged.network(boot, threshold = 0.5)
+avg_boot <- averaged.network(boot, threshold = 0.5)
 arcs(avg_boot) <- directed.arcs(avg_boot)
 
-##Prepare to query the network
-metadata <- read.csv(metadata_file)
+metadata <- read.csv(metadata_file, check.names = FALSE)
 gene_names <- metadata[,1]
-lookup <- setNames(as.character(metadata[, 2]), metadata[, 1])
+lookup <- setNames(as.character(metadata[,2]), metadata[,1])
 valid_genes <- intersect(gene_names, colnames(data))
 
 Nlists <- resamples
-
-boosts = function(d_fact, Nlists, avg_boot) {
-  sample_data_list <- lapply(1:Nlists, function(i) {
-    sample_data <- dplyr::slice_sample(d_fact, n=nrow(d_fact), replace = T)
+boosts <- function(d_fact, Nlists, avg_boot) {
+  lapply(seq_len(Nlists), function(i) {
+    sample_data <- dplyr::slice_sample(d_fact, n = nrow(d_fact), replace = TRUE)
     bnlearn::bn.fit(avg_boot, sample_data, method = 'bayes')
   })
-  return(sample_data_list)
 }
-
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 N <- length(valid_genes)
 epsilon <- ((N + 0.5) / (N + 1))
 
-combinations <- expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes)
-combinations <- subset(combinations, Gene_1 != Gene_2)
+combinations <- subset(expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes), Gene_1 != Gene_2)
 cat(paste("\n \033[32mNumber of genes in dataset:\033[39m", N, "\n"))
-
 max_combinations <- nrow(combinations)
 
-probs_list <- vector("list", max_combinations * length(boosts_list))
-risk_list <- vector("list", max_combinations * length(boosts_list))
-
-###Function to query the network
 compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
-  
-  ##Compute conditional probability
-  P_ij <- querygrain(setEvidence(grain_net, nodes = c(gene1), states = c("1"), propagate = TRUE), nodes = gene2)[[1]][2]
-  
-  ##Compute relative risk
-  exposed <- P_ij
-  
-  unexposed <- querygrain(setEvidence(grain_net, nodes = c(gene1), states = c("0"), propagate = TRUE), nodes = gene2)[[1]][2]
-  
-  relodds <- (exposed * epsilon) / (unexposed * epsilon)
-  
-  ##Return a list of dataframes
-  list(probs_data = data.frame(Gene_1 = gene1, Gene_2 = gene2, Conditional_Probability = P_ij),
-       risk_data = data.frame(Gene_1 = gene1, Gene_2 = gene2, Relative_Risk = relodds))
+  P_ij <- querygrain(setEvidence(grain_net, nodes = gene1, states = "1", propagate = TRUE), nodes = gene2)[[1]][2]
+  unexposed <- querygrain(setEvidence(grain_net, nodes = gene1, states = "0", propagate = TRUE), nodes = gene2)[[1]][2]
+
+  relodds <- (P_ij * epsilon) / (unexposed * epsilon)
+
+  list(
+    probs_data = data.frame(Gene_1 = gene1, Gene_2 = gene2, Conditional_Probability = P_ij),
+    risk_data  = data.frame(Gene_1 = gene1, Gene_2 = gene2, Relative_Risk = relodds)
+  )
 }
 
 n_queries <- (N * (N - 1) * Nlists)
-
 cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
 cat(paste("\n \033[32mNumber of queries:\033[39m", n_queries, "\n"))
-cat("\n \033[35mQuerying network. Please be patient.\033[39m\n \n")
+cat("\n \033[35mQuerying network. Please be patient.\033[39m\n\n")
 
-#Execute queries
-results <- foreach(i = 1:max_combinations, .packages = c("bnlearn", "dplyr", "gRain")) %dopar% {
+results <- foreach(i = 1:max_combinations, .packages = c("bnlearn","dplyr","gRain")) %dopar% {
   gene1 <- combinations$Gene_1[i]
   gene2 <- combinations$Gene_2[i]
-  temp_probs <- list()
-  temp_risk <- list()
-  
+  temp_probs <- vector("list", length(boosts_list))
+  temp_risk  <- vector("list", length(boosts_list))
+  idx <- 1L
   for (bn in boosts_list) {
     grain_net <- compile(as.grain(bn), propagate = TRUE)
     res <- compute_gene_stats(gene1, gene2, grain_net, epsilon)
-    temp_probs <- c(temp_probs, list(res$probs_data))
-    temp_risk <- c(temp_risk, list(res$risk_data))
+    temp_probs[[idx]] <- res$probs_data
+    temp_risk[[idx]]  <- res$risk_data
+    idx <- idx + 1L
   }
-  
   list(probs_data = do.call(rbind, temp_probs), risk_data = do.call(rbind, temp_risk))
 }
 
-# Combine the results after parallel processing
 probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
-risk_data <- do.call(rbind, lapply(results, `[[`, "risk_data"))
+risk_data  <- do.call(rbind, lapply(results, `[[`, "risk_data"))
 
-# Compute statistics for conditional probabilities
 probs_stats <- probs_data %>%
   group_by(Gene_1, Gene_2) %>%
-  summarise(Conditional_Probability_Mean = mean(Conditional_Probability),
-            Conditional_Probability_SD = sd(Conditional_Probability),
-            Conditional_Probability_CI_low = Conditional_Probability_Mean - qt(0.975, n() - 1) * Conditional_Probability_SD / sqrt(n()),
-            Conditional_Probability_CI_high = Conditional_Probability_Mean + qt(0.975, n() - 1) * Conditional_Probability_SD / sqrt(n()))
+  summarise(
+    Conditional_Probability_Mean = mean(Conditional_Probability),
+    Conditional_Probability_SD   = sd(Conditional_Probability),
+    Conditional_Probability_CI_low  = Conditional_Probability_Mean - qt(0.975, n() - 1) * Conditional_Probability_SD / sqrt(n()),
+    Conditional_Probability_CI_high = Conditional_Probability_Mean + qt(0.975, n() - 1) * Conditional_Probability_SD / sqrt(n()),
+    .groups = "drop"
+  )
 
-# Compute statistics for absolute risks
 risk_stats <- risk_data %>%
   group_by(Gene_1, Gene_2) %>%
-  summarise(Relative_Risk_Mean = mean(Relative_Risk),
-            Relative_Risk_SD = sd(Relative_Risk),
-            Relative_Risk_CI_low = Relative_Risk_Mean - qt(0.975, n() - 1) * Relative_Risk_SD / sqrt(n()),
-            Relative_Risk_CI_high = Relative_Risk_Mean + qt(0.975, n() - 1) * Relative_Risk_SD / sqrt(n()))
+  summarise(
+    Relative_Risk_Mean = mean(Relative_Risk),
+    Relative_Risk_SD   = sd(Relative_Risk),
+    Relative_Risk_CI_low  = Relative_Risk_Mean - qt(0.975, n() - 1) * Relative_Risk_SD / sqrt(n()),
+    Relative_Risk_CI_high = Relative_Risk_Mean + qt(0.975, n() - 1) * Relative_Risk_SD / sqrt(n()),
+    .groups = "drop"
+  )
 
-# Join the two sets of statistics into one data frame
-stats <- full_join(probs_stats, risk_stats, by = c("Gene_1", "Gene_2"))
-stats <- na.omit(stats)
-
-# Write data frame to a CSV file
+stats <- full_join(probs_stats, risk_stats, by = c("Gene_1","Gene_2")) %>% na.omit()
 write.csv(stats, "Results.csv", row.names = FALSE)
 
-###BDPS
 calculate_ratio <- function(stats, gene1, gene2) {
-  prob1 <- stats %>%
-    filter(Gene_1 == gene1, Gene_2 == gene2) %>%
-    pull(Conditional_Probability_Mean)
-  prob2 <- stats %>%
-    filter(Gene_1 == gene2, Gene_2 == gene1) %>%
-    pull(Conditional_Probability_Mean)
-  
-  if (length(prob1) > 0 && length(prob2) > 0) {
-    return (prob1 / prob2) ###BDPS
-  } else {
-    return(NA)
-  }
+  prob1 <- stats %>% filter(Gene_1 == gene1, Gene_2 == gene2) %>% pull(Conditional_Probability_Mean)
+  prob2 <- stats %>% filter(Gene_1 == gene2, Gene_2 == gene1) %>% pull(Conditional_Probability_Mean)
+  if (length(prob1) > 0 && length(prob2) > 0) return(prob1 / prob2)
+  NA
 }
 
-##Run BDPS
 result <- stats %>%
   distinct(Gene_1, Gene_2) %>%
   rowwise() %>%
   mutate(BDPS = calculate_ratio(stats, Gene_1, Gene_2)) %>%
-  select(Gene_A = Gene_1, Gene_B = Gene_2, BDPS)
+  select(Gene_A = Gene_1, Gene_B = Gene_2, BDPS) %>%
+  filter(!is.na(BDPS))
 
-result <- result[!is.na(result$BDPS),]
-
-##Fold Change
 calculate_fold_change <- function(stats, gene1, gene2) {
-  fc1 <- stats %>%
-    filter(Gene_1 == gene1, Gene_2 == gene2) %>%
-    pull(Relative_Risk_Mean)
-  fc2 <- stats %>%
-    filter(Gene_1 == gene2, Gene_2 == gene1) %>%
-    pull(Relative_Risk_Mean)
-  
-  if (length(fc1) > 0 && length(fc2) > 0) {
-    return((fc1 / fc2) / 2) ###Fold Change
-  } else {
-    return(NA)
-  }
+  fc1 <- stats %>% filter(Gene_1 == gene1, Gene_2 == gene2) %>% pull(Relative_Risk_Mean)
+  fc2 <- stats %>% filter(Gene_1 == gene2, Gene_2 == gene1) %>% pull(Relative_Risk_Mean)
+  if (length(fc1) > 0 && length(fc2) > 0) return((fc1 / fc2) / 2)
+  NA
 }
 
 fold_change_results <- stats %>%
   distinct(Gene_1, Gene_2) %>%
   rowwise() %>%
   mutate(Fold_Change = calculate_fold_change(stats, Gene_1, Gene_2)) %>%
-  select(Gene_A = Gene_1, Gene_B = Gene_2, Fold_Change)
+  select(Gene_A = Gene_1, Gene_B = Gene_2, Fold_Change) %>%
+  filter(!is.na(Fold_Change))
 
-fold_change_results <- fold_change_results[!is.na(fold_change_results$Fold_Change),]
-
-post_hoc <- full_join(result, fold_change_results, by = c("Gene_A", "Gene_B"))
-post_hoc <- na.omit(post_hoc)
-
+post_hoc <- full_join(result, fold_change_results, by = c("Gene_A","Gene_B")) %>% na.omit()
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
-##Stop cluster
 stopImplicitCluster()
 cat(" \033[032mStatistics calculated.\033[39m \n")
 
-## Prepare data for the network visualization
+# ---- network viz ----
 net <- graph_from_graphnel(as.graphNEL(avg_boot))
-
-# Check if the network has enough nodes and edges
-if(vcount(net) < 2 || ecount(net) == 0) {
-  stop("Network is too small or has no edges for visualization.")
-}
-
+if (vcount(net) < 2 || ecount(net) == 0) stop("Network is too small or has no edges for visualization.")
 visZach <- toVisNetworkData(net)
-
-nodes <- visZach$nodes
-edges <- visZach$edges
-
-# Apply function to each edge
+nodes <- visZach$nodes; edges <- visZach$edges
 
 get_width <- function(node_from, node_to, stats) {
-  row <- stats %>% filter((Gene_1 == node_from & Gene_2 == node_to) |
-                            (Gene_1 == node_to & Gene_2 == node_from))
-  if(nrow(row) > 0) {
+  row <- stats %>% filter((Gene_1 == node_from & Gene_2 == node_to) | (Gene_1 == node_to & Gene_2 == node_from))
+  if (nrow(row) > 0) {
     width_value <- row$Conditional_Probability_CI_high[1]
-    # Check for negative or unexpected values
-    if(width_value <= 0) {
-      stop("Encountered negative or zero width value in get_width function.")
-    }
+    if (width_value <= 0) stop("Encountered non-positive width value.")
     return(width_value)
-  } else {
-    return(0)  # Default value if no match is found
   }
+  0
 }
 
-# Apply the function to each pair of nodes in 'edges'
-edges$width <- sapply(1:nrow(edges), function(i) get_width(edges$from[i], edges$to[i], stats))
-
-# Rescale the weights
+edges$width <- sapply(seq_len(nrow(edges)), function(i) get_width(edges$from[i], edges$to[i], stats))
 edges$width <- scales::rescale(edges$width, to = c(1, 5))
-
 nodes <- nodes[nodes$id %in% valid_genes, ]
 
 nodes$group <- lookup[nodes$id]
-
 palette1 <- RColorBrewer::brewer.pal(8, "Set3")
 palette2 <- RColorBrewer::brewer.pal(8, "Set2")
 palette3 <- RColorBrewer::brewer.pal(12, "Paired")
 palette4 <- RColorBrewer::brewer.pal(8, "Dark2")
-
 color_palette <- c(palette1, palette2, palette3, palette4)
-
 unique_groups <- unique(nodes$group)
-
 color_palette <- color_palette[1:length(unique_groups)]
-
-if (length(unique_groups) > length(color_palette)) {
-  color_palette <- rep(color_palette, length.out = length(unique_groups))
-}
-
+if (length(unique_groups) > length(color_palette)) color_palette <- rep(color_palette, length.out = length(unique_groups))
 group_color_lookup <- setNames(color_palette, unique_groups)
 nodes$color <- group_color_lookup[nodes$group]
 
-# Prepare the legend (lnodes) to match the unique groups and their respective colors
-lnodes <- data.frame(color = color_palette,
-                     label = unique_groups,
-                     font.color = 'white')
+lnodes <- data.frame(color = color_palette, label = unique_groups, font.color = 'white')
 
-# Create and save the network
 network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
   visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
-  visEdges(smooth = list(enabled = T, type = 'diagonalCross', roundness = 0.1),
-           physics = F, color = "black") %>%
+  visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1), physics = FALSE, color = "black") %>%
   visIgraphLayout(layout = "layout_with_fr", type = 'full') %>%
-  visOptions(highlightNearest = list(enabled = T, degree = 1, hover = T, labelOnly = T),
-             nodesIdSelection = T) %>%
-  visLegend(addNodes = lnodes, width = 0.1, position = 'left', main = 'Gene Class', ncol = 2, useGroups = F)
-visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
+  visOptions(highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE, labelOnly = TRUE), nodesIdSelection = TRUE) %>%
+  visLegend(addNodes = lnodes, width = 0.1, position = 'left', main = 'Gene Class', ncol = 2, useGroups = FALSE)
 
-cat("\n \033[32mAnalysis complete.\033[39m\n \n")
+visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
+cat("\n \033[32mAnalysis complete.\033[39m\n\n")
