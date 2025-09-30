@@ -19,12 +19,16 @@ opt_list <- list(
   make_option(c("-b","--blacklist"), type="character", default=NULL,
               help="Optional blacklist CSV (no header): from,to"),
   make_option(c("--iss"), type="integer", default=10,
-              help="Imaginary sample size for BDe score [default: %default]")
+              help="Imaginary sample size for BDe score [default: %default]"),
+  make_option(c("--no-viz"), action="store_true", default=FALSE, dest = "no_viz",
+              help="Skip HTML/PDF visualization")
 )
 
 parser <- OptionParser(option_list = opt_list,
                        description = "ReGAIN — Bayesian network structure learning + gRain queries")
 opt <- parse_args(parser)
+
+no_viz <- isTRUE(opt$no_viz)
 
 required <- c("input","metadata","output_boot","number_of_bootstraps","resamples")
 missing <- required[!nzchar(trimws(sapply(required, function(k) as.character(opt[[k]])))) ]
@@ -71,6 +75,7 @@ cat("  # Bootstraps:         ", nboots, "\n")
 cat("  # Resamples:          ", resamples, "\n")
 cat("  ISS (BDe):            ", iss, "\n")
 if (!is.null(blacklist_path)) cat("  Blacklist:            ", blacklist_path, "\n") else cat("  Blacklist:            (none)\n")
+cat("  Visualization:        ", if (no_viz) "disabled (--no-viz)" else "enabled", "\n")
 
 stopifnot(file.exists(input_file), file.exists(metadata_file))
 data   <- read.csv(input_file, row.names = 1, check.names = TRUE)
@@ -314,155 +319,163 @@ write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 stopImplicitCluster()
 cat(" \033[032mStatistics calculated.\033[39m \n")
 
-# Build igraph from averaged network
-net <- graph_from_graphnel(as.graphNEL(avg_boot))
-if (vcount(net) < 2 || ecount(net) == 0) stop("Network is too small or has no edges for visualization.")
-
-# Layout once (so HTML and PDF share coordinates)
-set.seed(42)
-layout_fr <- igraph::layout_with_fr(net)
-coords <- data.frame(
-  name = igraph::V(net)$name,
-  x = layout_fr[,1],
-  y = layout_fr[,2],
-  stringsAsFactors = FALSE
-)
-
-# visNetwork data frames
-visDat <- toVisNetworkData(net)
-nodes <- visDat$nodes
-edges <- visDat$edges
-
-# Keep only nodes we can label/classify (present in metadata)
-nodes <- nodes[nodes$id %in% valid_genes, ]
-# Drop edges that reference removed nodes
-edges <- edges[edges$from %in% nodes$id & edges$to %in% nodes$id, , drop = FALSE]
-
-# Node groups/colors from metadata
-nodes$group <- lookup[nodes$id]
-palette1 <- RColorBrewer::brewer.pal(8, "Set3")
-palette2 <- RColorBrewer::brewer.pal(8, "Set2")
-palette3 <- RColorBrewer::brewer.pal(12, "Paired")
-palette4 <- RColorBrewer::brewer.pal(8, "Dark2")
-color_palette <- c(palette1, palette2, palette3, palette4)
-unique_groups <- unique(nodes$group)
-color_palette <- color_palette[1:length(unique_groups)]
-if (length(unique_groups) > length(color_palette)) {
-  color_palette <- rep(color_palette, length.out = length(unique_groups))
-}
-group_color_lookup <- setNames(color_palette, unique_groups)
-nodes$color <- group_color_lookup[nodes$group]
-
-# Attach FR layout coords to nodes by id
-nodes <- nodes %>%
-  left_join(coords, by = c("id" = "name"))
-
-# Edge width/color from stats:
-# - Width = max(Absolute_Risk_CI_high) per unordered pair
-# - Color = red if min(Relative_Risk_Mean) < 1 for that pair, else black
-stats_pairs <- stats %>%
-  transmute(
-    Gene_lo = pmin(as.character(Gene_1), as.character(Gene_2)),
-    Gene_hi = pmax(as.character(Gene_1), as.character(Gene_2)),
-    Absolute_Risk_CI_high,
-    Relative_Risk_Mean
-  ) %>%
-  mutate(pair_key = paste(Gene_lo, Gene_hi, sep = "||"))
-
-pair_summ <- stats_pairs %>%
-  group_by(pair_key) %>%
-  summarize(
-    width_val = suppressWarnings(max(Absolute_Risk_CI_high, na.rm = TRUE)),
-    rr_min    = suppressWarnings(min(Relative_Risk_Mean,   na.rm = TRUE)),
-    .groups   = "drop"
-  ) %>%
-  mutate(
-    width_val = ifelse(is.finite(width_val) & width_val > 0, width_val, NA_real_),
-    edge_color = ifelse(rr_min < 1, "red", "black")
+if (no_viz) {
+  cat("[INFO] Visualzation disabled (--no-viz).\n")
+} else {
+  
+  # Build igraph from averaged network
+  net <- graph_from_graphnel(as.graphNEL(avg_boot))
+  if (vcount(net) < 2 || ecount(net) == 0) stop("Network is too small or has no edges for visualization.")
+  
+  # Layout once (so HTML and PDF share coordinates)
+  set.seed(42)
+  layout_fr <- igraph::layout_with_fr(net)
+  coords <- data.frame(
+    name = igraph::V(net)$name,
+    x = layout_fr[,1],
+    y = layout_fr[,2],
+    stringsAsFactors = FALSE
   )
-
-edges <- edges %>%
-  mutate(
-    pair_key = paste(
-      pmin(as.character(from), as.character(to)),
-      pmax(as.character(from), as.character(to)),
-      sep = "||"
+  
+  # visNetwork data frames
+  visDat <- toVisNetworkData(net)
+  nodes <- visDat$nodes
+  edges <- visDat$edges
+  
+  # Keep only nodes we can label/classify (present in metadata)
+  nodes <- nodes[nodes$id %in% valid_genes, ]
+  # Drop edges that reference removed nodes
+  edges <- edges[edges$from %in% nodes$id & edges$to %in% nodes$id, , drop = FALSE]
+  
+  # Node groups/colors from metadata
+  nodes$group <- lookup[nodes$id]
+  palette1 <- RColorBrewer::brewer.pal(8, "Set3")
+  palette2 <- RColorBrewer::brewer.pal(8, "Set2")
+  palette3 <- RColorBrewer::brewer.pal(12, "Paired")
+  palette4 <- RColorBrewer::brewer.pal(8, "Dark2")
+  color_palette <- c(palette1, palette2, palette3, palette4)
+  unique_groups <- unique(nodes$group)
+  color_palette <- color_palette[1:length(unique_groups)]
+  
+  if (length(unique_groups) > length(color_palette)) {
+    color_palette <- rep(color_palette, length.out = length(unique_groups))
+  }
+  
+  group_color_lookup <- setNames(color_palette, unique_groups)
+  nodes$color <- group_color_lookup[nodes$group]
+  
+  # Attach FR layout coords to nodes by id
+  nodes <- nodes %>%
+    left_join(coords, by = c("id" = "name"))
+  
+  # Edge width/color from stats:
+  # - Width = max(Absolute_Risk_CI_high) per unordered pair
+  # - Color = red if min(Relative_Risk_Mean) < 1 for that pair, else black
+  stats_pairs <- stats %>%
+    transmute(
+      Gene_lo = pmin(as.character(Gene_1), as.character(Gene_2)),
+      Gene_hi = pmax(as.character(Gene_1), as.character(Gene_2)),
+      Absolute_Risk_CI_high,
+      Relative_Risk_Mean
+    ) %>%
+    mutate(pair_key = paste(Gene_lo, Gene_hi, sep = "||"))
+  
+  pair_summ <- stats_pairs %>%
+    group_by(pair_key) %>%
+    summarize(
+      width_val = suppressWarnings(max(Absolute_Risk_CI_high, na.rm = TRUE)),
+      rr_min    = suppressWarnings(min(Relative_Risk_Mean,   na.rm = TRUE)),
+      .groups   = "drop"
+    ) %>%
+    mutate(
+      width_val = ifelse(is.finite(width_val) & width_val > 0, width_val, NA_real_),
+      edge_color = ifelse(rr_min < 1, "red", "black")
     )
-  ) %>%
-  left_join(pair_summ, by = "pair_key")
-
-# Compute visual width (scale to 1..5). Default color = black.
-edges$width <- scales::rescale(replace_na(edges$width_val, 0), to = c(1, 5))
-edges$color <- ifelse(is.na(edges$edge_color), "black", edges$edge_color)
-
-# Legend entries for groups
-lnodes <- data.frame(color = color_palette,
-                     label = unique_groups,
-                     font.color = 'white')
-
-# ---- HTML (visNetwork) ----
-network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
-  visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
-  visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1),
-           physics = FALSE, color = "black") %>%  # base color; individual edge colors applied from edges$color
-  visIgraphLayout(layout = "layout_with_fr", type = 'full') %>%
-  visOptions(highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE, labelOnly = TRUE),
-             nodesIdSelection = TRUE) %>%
-  visLegend(addNodes = lnodes, width = 0.1, position = 'left',
-            main = 'Variable Type', ncol = 2, useGroups = FALSE)
-
-visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
-
-# ---- PDF (ggraph) ----
-# Build a tidygraph, then join node coords/colors and edge attrs
-tbl <- as_tbl_graph(net)
-
-# Node attrs (coords + color)
-node_data <- nodes %>%
-  transmute(name = id, x, y, node_color = unname(color))
-
-tbl <- tbl %>%
-  activate(nodes) %>%
-  left_join(node_data, by = "name")
-
-# Edge attrs from edges df by unordered pair key
-edge_attrs <- edges %>%
-  transmute(
-    pair_key = paste(pmin(from, to), pmax(from, to), sep = "||"),
-    width,
-    color
-  )
-
-node_names <- tbl %>% activate(nodes) %>% pull(name)
-
-tbl <- tbl %>%
-  activate(edges) %>%
-  mutate(pair_key = paste(pmin(node_names[from], node_names[to]),
-                          pmax(node_names[from], node_names[to]),
-                          sep = "||")) %>%
-  left_join(edge_attrs, by = "pair_key") %>%
-  mutate(
-    width = replace_na(width, 1),
-    color = replace_na(color, "black")
-  )
-
-p <- ggraph(tbl, layout = "manual", x = x, y = y) +
-  geom_edge_link(aes(edge_width = width, edge_colour = color),
-                 lineend = "round", show.legend = TRUE) +
-  scale_edge_width(range = c(1, 3), guide = "none") +
-  scale_edge_colour_identity(name = "Edge",
-                             labels = c("black" = "RR >= 1", "red" = "RR < 1"),
-                             breaks = c("black", "red"),
-                             guide = "legend") +
-  geom_node_point(aes(fill = node_color),
-                  shape = 21, size = 10, stroke = 0.3, colour = "grey30") +
-  scale_fill_identity(name = "Variable Type",
-                      breaks = unname(group_color_lookup),
-                      labels = names(group_color_lookup),
-                      guide = "legend") +
-  geom_node_text(aes(label = name), size = 4.8, vjust = -1) +
-  theme_void() +
-  theme(legend.position = "left")
-
-ggsave("Bayesian_Network.pdf", p, width = 14, height = 10, units = "in")
-cat("\n \033[32mSaved Bayesian_Network.html and Bayesian_Network.pdf.\033[39m\n\n")
+  
+  edges <- edges %>%
+    mutate(
+      pair_key = paste(
+        pmin(as.character(from), as.character(to)),
+        pmax(as.character(from), as.character(to)),
+        sep = "||"
+      )
+    ) %>%
+    left_join(pair_summ, by = "pair_key")
+  
+  # Compute visual width (scale to 1..5). Default color = black.
+  edges$width <- scales::rescale(replace_na(edges$width_val, 0), to = c(1, 5))
+  edges$color <- ifelse(is.na(edges$edge_color), "black", edges$edge_color)
+  
+  # Legend entries for groups
+  lnodes <- data.frame(color = color_palette,
+                       label = unique_groups,
+                       font.color = 'white')
+  
+  # ---- HTML (visNetwork) ----
+  network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
+    visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
+    visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1),
+             physics = FALSE, color = "black") %>%  # base color; individual edge colors applied from edges$color
+    visIgraphLayout(layout = "layout_with_fr", type = 'full') %>%
+    visOptions(highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE, labelOnly = TRUE),
+               nodesIdSelection = TRUE) %>%
+    visLegend(addNodes = lnodes, width = 0.1, position = 'left',
+              main = 'Variable Type', ncol = 2, useGroups = FALSE)
+  
+  visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
+  
+  # ---- PDF (ggraph) ----
+  # Build a tidygraph, then join node coords/colors and edge attrs
+  tbl <- as_tbl_graph(net)
+  
+  # Node attrs (coords + color)
+  node_data <- nodes %>%
+    transmute(name = id, x, y, node_color = unname(color))
+  
+  tbl <- tbl %>%
+    activate(nodes) %>%
+    left_join(node_data, by = "name")
+  
+  # Edge attrs from edges df by unordered pair key
+  edge_attrs <- edges %>%
+    transmute(
+      pair_key = paste(pmin(from, to), pmax(from, to), sep = "||"),
+      width,
+      color
+    )
+  
+  node_names <- tbl %>% activate(nodes) %>% pull(name)
+  
+  tbl <- tbl %>%
+    activate(edges) %>%
+    mutate(pair_key = paste(pmin(node_names[from], node_names[to]),
+                            pmax(node_names[from], node_names[to]),
+                            sep = "||")) %>%
+    left_join(edge_attrs, by = "pair_key") %>%
+    mutate(
+      width = replace_na(width, 1),
+      color = replace_na(color, "black")
+    )
+  
+  p <- ggraph(tbl, layout = "manual", x = x, y = y) +
+    geom_edge_link(aes(edge_width = width, edge_colour = color),
+                   lineend = "round", show.legend = TRUE) +
+    scale_edge_width(range = c(1, 3), guide = "none") +
+    scale_edge_colour_identity(name = "Edge",
+                               labels = c("black" = "RR >= 1", "red" = "RR < 1"),
+                               breaks = c("black", "red"),
+                               guide = "legend") +
+    geom_node_point(aes(fill = node_color),
+                    shape = 21, size = 10, stroke = 0.3, colour = "grey30") +
+    scale_fill_identity(name = "Variable Type",
+                        breaks = unname(group_color_lookup),
+                        labels = names(group_color_lookup),
+                        guide = "legend") +
+    geom_node_text(aes(label = name), size = 4.8, vjust = -1) +
+    theme_void() +
+    theme(legend.position = "left")
+  
+  ggsave("Bayesian_Network.pdf", p, width = 14, height = 10, units = "in")
+  cat("\n \033[32mSaved Bayesian_Network.html and Bayesian_Network.pdf.\033[39m\n\n")
+  
+}

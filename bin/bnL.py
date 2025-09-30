@@ -15,6 +15,10 @@ def main():
     ap.add_argument("-r","--number_of_resamples", required=True, type=int, help="Number of resamples for querying")
     ap.add_argument("-b","--blacklist", help="Optional blacklist CSV (no header): from,to")
     ap.add_argument("--iss", type=int, default=10, help="Imaginary sample size for BDe score (default: 10)")
+    ap.add_argument("--no-viz", dest="no_viz", action="store_true",
+                help="Skip HTML/PDF visualization")
+    ap.add_argument("--cp-samples", dest="cp_samples", type=int, default=10000,
+                help="Monte Carlo samples for cpquery (default: 10000)")
     args, unknown = ap.parse_known_args()
 
     bash = shutil.which("bash")
@@ -35,9 +39,13 @@ def main():
         "--number_of_bootstraps", str(args.number_of_bootstraps),
         "--resamples", str(args.number_of_resamples),
         "--iss", str(args.iss),
+        "--cp-samples", str(args.cp_samples),
     ]
     if args.blacklist:
         cmd += ["--blacklist", args.blacklist]
+
+    if args.no_viz:
+        cmd += ["--no-viz"]
 
     # Forward any unknown extra flags to R
     cmd += unknown
