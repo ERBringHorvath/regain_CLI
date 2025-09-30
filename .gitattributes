@@ -1,0 +1,5 @@
+# Normalize text; enforce LF for scripts
+*          text=auto
+*.sh       text eol=lf
+*.R        text eol=lf
+*.py       text eol=lf
