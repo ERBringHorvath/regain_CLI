@@ -374,7 +374,7 @@ if (no_viz) {
   
   lnodes <- data.frame(color = color_palette, label = unique_groups, font.color = 'white')
   
-  # HTML
+  ##---- HTML ----
   network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
     visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
     visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1),
@@ -386,7 +386,7 @@ if (no_viz) {
               main = 'Variable Type', ncol = 2, useGroups = FALSE)
   visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
   
-  # PDF
+  ##---- PDF ----
   tbl <- as_tbl_graph(net) %>%
     activate(nodes) %>%
     left_join(nodes %>% transmute(name = id, x, y, node_color = unname(color)), by = "name")

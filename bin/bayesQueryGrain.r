@@ -36,7 +36,6 @@ if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
 }
 
-## ---- dependency check/install (same as before) ----
 pkgs <- c(
   'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
   'igraph','reshape2','doParallel','scales',
@@ -150,7 +149,8 @@ boosts <- function(d_fact, Nlists, avg_boot) {
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 N <- length(valid_genes)
-epsilon <- 1e-9
+#epsilon <- ((N + 0.5) / (N + 1))
+epsilon = 1e-9
 
 # All ordered pairs, excluding self-pairs
 combinations <- expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes)
@@ -186,7 +186,7 @@ compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
     grain_net, nodes = gene2, type = "marginal"
   )[[1]][2]
 
-  # Relative risk (note: current epsilon form cancels; keep for now)
+  # Relative risk
   relodds <- (exposed + epsilon) / (unexposed + epsilon)
 
   # Absolute risk difference
@@ -402,7 +402,7 @@ if (no_viz) {
     ) %>%
     left_join(pair_summ, by = "pair_key")
   
-  # Compute visual width (scale to 1..5). Default color = black.
+  # Compute visual width (scale to 1..5)
   edges$width <- scales::rescale(replace_na(edges$width_val, 0), to = c(1, 5))
   edges$color <- ifelse(is.na(edges$edge_color), "black", edges$edge_color)
   
@@ -411,7 +411,7 @@ if (no_viz) {
                        label = unique_groups,
                        font.color = 'white')
   
-  # ---- HTML (visNetwork) ----
+  # ---- HTML ----
   network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
     visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
     visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1),
@@ -424,7 +424,7 @@ if (no_viz) {
   
   visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
   
-  # ---- PDF (ggraph) ----
+  # ---- PDF ----
   # Build a tidygraph, then join node coords/colors and edge attrs
   tbl <- as_tbl_graph(net)
   
