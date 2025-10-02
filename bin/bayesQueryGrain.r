@@ -150,7 +150,7 @@ boosts <- function(d_fact, Nlists, avg_boot) {
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 N <- length(valid_genes)
-epsilon <- ((N + 0.5) / (N + 1))  # note: currently cancels if multiplied both numerator/denominator
+epsilon <- 1e-9
 
 # All ordered pairs, excluding self-pairs
 combinations <- expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes)
@@ -187,7 +187,7 @@ compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
   )[[1]][2]
 
   # Relative risk (note: current epsilon form cancels; keep for now)
-  relodds <- (exposed * epsilon) / (unexposed * epsilon)
+  relodds <- (exposed + epsilon) / (unexposed + epsilon)
 
   # Absolute risk difference
   abs_diff <- exposed - unexposed

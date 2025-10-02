@@ -41,7 +41,6 @@ if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
 }
 
-## ---- dependency check/install ----
 pkgs <- c(
   'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
   'igraph','reshape2','doParallel','scales',
@@ -61,7 +60,6 @@ suppressPackageStartupMessages({
   library(tidygraph); library(ggraph); library(ggplot2); library(tidyr)
 })
 
-## ---- inputs ----
 input_file    <- opt$input
 metadata_file <- opt$metadata
 output_boot   <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
@@ -105,7 +103,6 @@ on.exit(stopCluster(cl), add = TRUE)
 registerDoParallel(cl)
 try({ clusterSetRNGStream(cl, 13245) }, silent = TRUE)
 
-## ---- bootstrap (structure learning) ----
 cat("\n \033[32mBootstrapping started.\033[39m\n\n")
 algo_args <- list(score = "bde", iss = iss)
 if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
@@ -171,7 +168,9 @@ cat("\n \033[35mQuerying network via cpquery. Please be patient.\033[39m\n\n")
   parse(text = sprintf("`%s` == '%s'", node, val))[[1]]
 }
 
-compute_gene_stats <- function(gene1, gene2, bn_fit, eps = 1e-9, cp_samples = 10000L) {
+epsilon = 1e-9
+
+compute_gene_stats <- function(gene1, gene2, bn_fit, epsilon = epsilon, cp_samples = 10000L) {
   # Build expressions (do NOT eval() them here)
   e_event <- .make_expr(gene2, "1")
   e_on    <- .make_expr(gene1, "1")
@@ -190,7 +189,7 @@ compute_gene_stats <- function(gene1, gene2, bn_fit, eps = 1e-9, cp_samples = 10
   if (is.na(exposed))   exposed   <- 0
   if (is.na(unexposed)) unexposed <- 0
   
-  rr      <- (exposed + eps) / (unexposed + eps)
+  rr      <- (exposed + epsilon) / (unexposed + epsilon)
   absdiff <- exposed - unexposed
   
   list(
@@ -204,27 +203,32 @@ compute_gene_stats <- function(gene1, gene2, bn_fit, eps = 1e-9, cp_samples = 10
 }
 
 ## ---- parallel query loop ----
-results <- foreach(i = seq_len(nrow(combinations)), .packages = c("bnlearn","dplyr")) %dopar% {
-  gene1 <- combinations$Gene_1[i]
-  gene2 <- combinations$Gene_2[i]
-  temp_probs <- vector("list", length(boosts_list))
-  temp_risk  <- vector("list", length(boosts_list))
-  temp_abs   <- vector("list", length(boosts_list))
-  
-  idx <- 1L
-  for (bn_fit in boosts_list) {
-    res <- compute_gene_stats(gene1, gene2, bn_fit)
-    temp_probs[[idx]] <- res$probs_data
-    temp_risk[[idx]]  <- res$risk_data
-    temp_abs[[idx]]   <- res$abs_data
-    idx <- idx + 1L
-  }
-  
-  list(
-    probs_data = do.call(rbind, temp_probs),
-    risk_data  = do.call(rbind, temp_risk),
-    abs_data   = do.call(rbind, temp_abs)
-  )
+results <- foreach(i = seq_len(nrow(combinations)),
+                   .packages = c("bnlearn", "dplyr")) %dopar% {
+ gene1 <- combinations$Gene_1[i]
+ gene2 <- combinations$Gene_2[i]
+ 
+ temp_probs <- vector("list", length(boosts_list))
+ temp_risk  <- vector("list", length(boosts_list))
+ temp_abs   <- vector("list", length(boosts_list))
+ 
+ for (j in seq_along(boosts_list)) {
+   bn_fit <- boosts_list[[j]]
+   res <- compute_gene_stats(
+     gene1, gene2, bn_fit,
+     epsilon    = epsilon,      # pass explicitly
+     cp_samples = cp_samples    # for bnL; omit if not defined in bnS
+   )
+   temp_probs[[j]] <- res$probs_data
+   temp_risk[[j]]  <- res$risk_data
+   temp_abs[[j]]   <- res$abs_data
+ }
+ 
+ list(
+   probs_data = do.call(rbind, temp_probs),
+   risk_data  = do.call(rbind, temp_risk),
+   abs_data   = do.call(rbind, temp_abs)
+ )
 }
 
 probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
