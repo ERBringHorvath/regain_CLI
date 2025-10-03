@@ -172,7 +172,7 @@ ________________________________________________________________________________
 `-r`, `--number-of-resamples`, how many data resamples you want to use (suggested 100) <br />
 `--blacklist`, pptional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
 `--iss`, maginary sample size for BDe score (default = 10) <br/>
-`--no-viz`, Skip HTML/PDF visualization
+`--no-viz`, Skip HTML/PDF visualization (for use if specific options are wanted, see `regain network`)
 
 **bnL only:**
 
@@ -208,6 +208,28 @@ gene1, gene2 <br/>
 gene2, gene1
 
 Additionally, blacklists should be used with caution; ideally, only 'imposible' variables should be blacklisted. An example of this would be a gene with 2 different mutations at the same site (e.g., *gyrA_S83D* and *gyrA_S83E*). 
+
+## Stand Alone Network Visualization (for use if `--no-viz` is passed)
+
+`regain network`
+
+`-i`, `--input`, input RDS file generated from `bnS`/`bnL` analysis <br />
+`-d`, `--data`, input filtered data matrix file <br />
+`-M`, `--metadata`, input metadata file <br />
+`-s`, `--statistics_results`, input 'Results.csv' file from `bnS`/`bnL` analysis <br/>
+`--threshold`, averaged network threshold (default: 0.5) <br/>
+`--seed`, layout seed for Fruchterman-Reingold force-directed layout algorithm (pdf output) <br/>
+`--html-out`, HTML output file name (default: Bayesian_Network.html) <br/>
+`--pdf-out`, PDF output file name (default: Bayesian_Network.pdf) <br/>
+`-b`, `--blacklist`, optional blacklist CSV (no header): from,to <br/>
+`--width-metric`, edge-width metric selection (auto, abs_mean, abs_ci, cp_ci, cp_mean) (default: auto (abs_ci)) <br/>
+`--rr-metric`, relative risk edge color threshold (default: 1.0, <1: red, >=1: black)
+
+**Example usage:**
+
+`regain network -i network.rds -d matrix_filtered.csv -M metadata.csv -s Results.csv`
+
+This workflow is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed or specific parameters beyond `bnS`/`bnL` defaults are wanted.
 _________________________________________________________________________________
 # **ReGAIN Curate**
 

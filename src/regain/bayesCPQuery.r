@@ -1,12 +1,15 @@
 #!/usr/bin/env Rscript
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 University of Utah
+
+options(stringsAsFactors = FALSE)
+
 suppressPackageStartupMessages({
   library(optparse)
 })
 
 options(repos = c(CRAN = "https://cloud.r-project.org"),
         dplyr.summarise.inform = FALSE)
-
-options(stringsAsFactors = FALSE)
 
 ## ---- CLI ----
 opt_list <- list(
@@ -21,14 +24,17 @@ opt_list <- list(
   make_option(c("--iss"), type="integer", default=10,
               help="Imaginary sample size for BDe score [default: %default]"),
   make_option(c("--no-viz"), action="store_true", default=FALSE, dest = "no_viz",
-              help="Skip HTML/PDF visualization")
+              help="Skip HTML/PDF visualization"),
+  make_option(c("--cp-samples"), type="integer", default=10000,
+              help="Monte Carlo samples for cpquery [default: %default]")
 )
 
 parser <- OptionParser(option_list = opt_list,
-                       description = "ReGAIN — Bayesian network structure learning + gRain queries")
+                       description = "ReGAIN — Bayesian network (CPQuery) structure learning + queries")
 opt <- parse_args(parser)
 
 no_viz <- isTRUE(opt$no_viz)
+cp_samples <- opt$cp_samples
 
 required <- c("input","metadata","output_boot","number_of_bootstraps","resamples")
 missing <- required[!nzchar(trimws(sapply(required, function(k) as.character(opt[[k]])))) ]
@@ -39,30 +45,29 @@ if (length(missing)) {
 pkgs <- c(
   'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
   'igraph','reshape2','doParallel','scales',
-  'tidygraph','ggraph','ggplot2','tidyr'
+  'tidygraph','ggraph','ggplot2','tidyr'   # for PDF plotting
 )
 miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if (length(miss) > 0) install.packages(miss)
 
-bioc_pkgs <- c('bnlearn','gRain','progressr','graph')
+bioc_pkgs <- c('bnlearn','graph','progressr')  # gRain not required for cpquery
 miss_bioc <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
 if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update = FALSE)
 
 suppressPackageStartupMessages({
   library(dplyr); library(parallel); library(doParallel); library(pbapply)
   library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
-  library(bnlearn); library(gRain); library(graph); library(scales); library(foreach); library(tidygraph)
-  library(ggraph); library(ggplot2); library(tidyr)
+  library(bnlearn); library(graph); library(scales); library(foreach)
+  library(tidygraph); library(ggraph); library(ggplot2); library(tidyr)
 })
 
-## ---- inputs & echo ----
-input_file  <- opt$input
+input_file    <- opt$input
 metadata_file <- opt$metadata
-output_boot <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
-threads     <- opt$threads
-nboots      <- opt$number_of_bootstraps
-resamples   <- opt$resamples
-iss         <- opt$iss
+output_boot   <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
+threads       <- opt$threads
+nboots        <- opt$number_of_bootstraps
+resamples     <- opt$resamples
+iss           <- opt$iss
 blacklist_path <- opt$blacklist
 
 cat("User Inputs:\n")
@@ -81,14 +86,13 @@ data   <- read.csv(input_file, row.names = 1, check.names = TRUE)
 d_fact <- data %>% mutate_if(is.numeric, as.factor)
 vars   <- colnames(d_fact)
 
-## ---- optional blacklist load & filter ----
+## ---- optional blacklist ----
 blacklist_filtered <- NULL
 if (!is.null(blacklist_path)) {
   stopifnot(file.exists(blacklist_path))
   bl <- read.csv(blacklist_path, header = FALSE, stringsAsFactors = FALSE, check.names = FALSE)
   if (ncol(bl) < 2) stop("Blacklist must have 2 columns: from,to (no header).")
   colnames(bl)[1:2] <- c("from","to")
-  # Keep only arcs whose endpoints are in the dataset
   blacklist_filtered <- subset(bl, from %in% vars & to %in% vars)
   cat("  Blacklist arcs (after filtering to present variables): ", nrow(blacklist_filtered), "\n")
 }
@@ -98,16 +102,13 @@ n_cores <- max(1, as.integer(threads))
 cl <- parallel::makeCluster(n_cores)
 on.exit(stopCluster(cl), add = TRUE)
 registerDoParallel(cl)
+try({ clusterSetRNGStream(cl, 13245) }, silent = TRUE)
 
-## ---- bootstrap ----
 cat("\n \033[32mBootstrapping started.\033[39m\n\n")
-
 algo_args <- list(score = "bde", iss = iss)
 if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
-  # bnlearn expects a two-column data.frame with names 'from','to'
   algo_args$blacklist <- blacklist_filtered[, c("from","to")]
 }
-
 boot <- boot.strength(
   data = d_fact,
   R = nboots,
@@ -115,7 +116,6 @@ boot <- boot.strength(
   algorithm.args = algo_args,
   cluster = cl
 )
-
 saveRDS(boot, file = output_boot)
 
 avg_boot <- averaged.network(boot, threshold = 0.5)
@@ -133,7 +133,7 @@ if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
   avg_boot <- avg_boot_clean
 }
 
-## ---- prepare to query ----
+## ---- prepare to query (cpquery) ----
 metadata <- read.csv(metadata_file, check.names = FALSE)
 gene_names <- metadata[,1]
 lookup <- setNames(as.character(metadata[,2]), metadata[,1])
@@ -149,14 +149,10 @@ boosts <- function(d_fact, Nlists, avg_boot) {
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 N <- length(valid_genes)
-#epsilon <- ((N + 0.5) / (N + 1))
-epsilon = 1e-9
-
-# All ordered pairs, excluding self-pairs
 combinations <- expand.grid(Gene_1 = valid_genes, Gene_2 = valid_genes)
 combinations <- subset(combinations, Gene_1 != Gene_2)
 
-# If a blacklist exists, remove those directed pairs from combinations
+# remove blacklisted directed pairs from query combinations
 if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
   bl_keys <- paste(blacklist_filtered$from, blacklist_filtered$to, sep = "___")
   combo_keys <- paste(combinations$Gene_1, combinations$Gene_2, sep = "___")
@@ -166,77 +162,81 @@ if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
 
 cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
 cat(paste("\n \033[32mNumber of queries:\033[39m", nrow(combinations) * length(boosts_list), "\n"))
-cat("\n \033[35mQuerying network. Please be patient.\033[39m\n\n")
+cat("\n \033[35mQuerying network via cpquery. Please be patient.\033[39m\n\n")
 
-compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
-  # P(gene2 = 1 | gene1 = 1)
-  exposed <- querygrain(
-    setEvidence(grain_net, nodes = gene1, states = "1", propagate = TRUE),
-    nodes = gene2
-  )[[1]][2]
+# Safely build an expression like `geneName` == '1' / '0'
+.make_expr <- function(node, val) {
+  parse(text = sprintf("`%s` == '%s'", node, val))[[1]]
+}
 
-  # P(gene2 = 1 | gene1 = 0)
-  unexposed <- querygrain(
-    setEvidence(grain_net, nodes = gene1, states = "0", propagate = TRUE),
-    nodes = gene2
-  )[[1]][2]
+epsilon = 1e-9
 
-  # Baseline (marginal) P(gene2 = 1)
-  marginal_prob_outcome <- querygrain(
-    grain_net, nodes = gene2, type = "marginal"
-  )[[1]][2]
-
-  # Relative risk
-  relodds <- (exposed + epsilon) / (unexposed + epsilon)
-
-  # Absolute risk difference
-  abs_diff <- exposed - unexposed
-
+compute_gene_stats <- function(gene1, gene2, bn_fit, epsilon = epsilon, cp_samples = 10000L) {
+  # Build expressions (do NOT eval() them here)
+  e_event <- .make_expr(gene2, "1")
+  e_on    <- .make_expr(gene1, "1")
+  e_off   <- .make_expr(gene1, "0")
+  
+  # Inline the expressions into cpquery() so substitute(event) sees the real exprs
+  call_on  <- substitute(bnlearn::cpquery(bn_fit, event = EV, evidence = ED, n = cp_samples),
+                         list(EV = e_event, ED = e_on))
+  call_off <- substitute(bnlearn::cpquery(bn_fit, event = EV, evidence = ED, n = cp_samples),
+                         list(EV = e_event, ED = e_off))
+  
+  exposed   <- eval(call_on)
+  unexposed <- eval(call_off)
+  
+  # guard against NA from impossible evidence
+  if (is.na(exposed))   exposed   <- 0
+  if (is.na(unexposed)) unexposed <- 0
+  
+  rr      <- (exposed + epsilon) / (unexposed + epsilon)
+  absdiff <- exposed - unexposed
+  
   list(
-    probs_data        = data.frame(Gene_1 = gene1, Gene_2 = gene2,
-                                   Conditional_Probability = exposed),
-    risk_data         = data.frame(Gene_1 = gene1, Gene_2 = gene2,
-                                   Relative_Risk = relodds),
-    abs_data          = data.frame(Gene_1 = gene1, Gene_2 = gene2,
-                                   Absolute_Risk = abs_diff),
-    overall_data      = data.frame(Gene_1 = gene1, Gene_2 = gene2,
-                                   Overall_AR = marginal_prob_outcome)
+    probs_data = data.frame(Gene_1 = gene1, Gene_2 = gene2,
+                            Conditional_Probability = exposed),
+    risk_data  = data.frame(Gene_1 = gene1, Gene_2 = gene2,
+                            Relative_Risk = rr),
+    abs_data   = data.frame(Gene_1 = gene1, Gene_2 = gene2,
+                            Absolute_Risk = absdiff)
   )
 }
 
-results <- foreach(i = seq_len(nrow(combinations)), .packages = c("bnlearn","dplyr","gRain")) %dopar% {
-  gene1 <- combinations$Gene_1[i]
-  gene2 <- combinations$Gene_2[i]
-  
-  temp_probs <- vector("list", length(boosts_list))
-  temp_risk  <- vector("list", length(boosts_list))
-  temp_abs   <- vector("list", length(boosts_list))
-  temp_over  <- vector("list", length(boosts_list))
-  
-  idx <- 1L
-  for (bn in boosts_list) {
-    grain_net <- compile(as.grain(bn), propagate = TRUE)
-    res <- compute_gene_stats(gene1, gene2, grain_net, epsilon)
-    temp_probs[[idx]] <- res$probs_data
-    temp_risk[[idx]]  <- res$risk_data
-    temp_abs[[idx]]   <- res$abs_data
-    temp_over[[idx]]  <- res$overall_data
-    idx <- idx + 1L
-  }
-  
-  list(
-    probs_data   = do.call(rbind, temp_probs),
-    risk_data    = do.call(rbind, temp_risk),
-    abs_data     = do.call(rbind, temp_abs),
-    overall_data = do.call(rbind, temp_over)
-  )
+## ---- parallel query loop ----
+results <- foreach(i = seq_len(nrow(combinations)),
+                   .packages = c("bnlearn", "dplyr")) %dopar% {
+ gene1 <- combinations$Gene_1[i]
+ gene2 <- combinations$Gene_2[i]
+ 
+ temp_probs <- vector("list", length(boosts_list))
+ temp_risk  <- vector("list", length(boosts_list))
+ temp_abs   <- vector("list", length(boosts_list))
+ 
+ for (j in seq_along(boosts_list)) {
+   bn_fit <- boosts_list[[j]]
+   res <- compute_gene_stats(
+     gene1, gene2, bn_fit,
+     epsilon    = epsilon,      # pass explicitly
+     cp_samples = cp_samples    # for bnL; omit if not defined in bnS
+   )
+   temp_probs[[j]] <- res$probs_data
+   temp_risk[[j]]  <- res$risk_data
+   temp_abs[[j]]   <- res$abs_data
+ }
+ 
+ list(
+   probs_data = do.call(rbind, temp_probs),
+   risk_data  = do.call(rbind, temp_risk),
+   abs_data   = do.call(rbind, temp_abs)
+ )
 }
 
-probs_data   <- do.call(rbind, lapply(results, `[[`, "probs_data"))
-risk_data    <- do.call(rbind, lapply(results, `[[`, "risk_data"))
-abs_data     <- do.call(rbind, lapply(results, `[[`, "abs_data"))
-overall_data <- do.call(rbind, lapply(results, `[[`, "overall_data"))
+probs_data <- do.call(rbind, lapply(results, `[[`, "probs_data"))
+risk_data  <- do.call(rbind, lapply(results, `[[`, "risk_data"))
+abs_data   <- do.call(rbind, lapply(results, `[[`, "abs_data"))
 
+## ---- summaries ----
 probs_stats <- probs_data %>%
   group_by(Gene_1, Gene_2) %>%
   summarise(
@@ -267,31 +267,19 @@ abs_stats <- abs_data %>%
     .groups = "drop"
   )
 
-overall_abs_stats <- overall_data %>%
-  group_by(Gene_1, Gene_2) %>%
-  summarise(
-    Overall_AR_Mean    = mean(Overall_AR),
-    Overall_AR_SD      = sd(Overall_AR),
-    Overall_AR_CI_low  = Overall_AR_Mean - qt(0.975, n() - 1) * Overall_AR_SD / sqrt(n()),
-    Overall_AR_CI_high = Overall_AR_Mean + qt(0.975, n() - 1) * Overall_AR_SD / sqrt(n()),
-    .groups = "drop"
-  )
-
 stats <- full_join(probs_stats, risk_stats, by = c("Gene_1","Gene_2")) %>%
-  left_join(abs_stats,         by = c("Gene_1","Gene_2")) %>%
-  left_join(overall_abs_stats, by = c("Gene_1","Gene_2")) %>%
+  left_join(abs_stats, by = c("Gene_1","Gene_2")) %>%
   na.omit()
 
 write.csv(stats, "Query_Results.csv", row.names = FALSE)
 
-## ---- BDPS / Fold Change (unchanged) ----
+## ---- BDPS / Fold Change (same as bnS; no baseline here) ----
 calculate_ratio <- function(stats, gene1, gene2) {
   prob1 <- stats %>% filter(Gene_1 == gene1, Gene_2 == gene2) %>% pull(Conditional_Probability_Mean)
   prob2 <- stats %>% filter(Gene_1 == gene2, Gene_2 == gene1) %>% pull(Conditional_Probability_Mean)
   if (length(prob1) > 0 && length(prob2) > 0) return(prob1 / prob2)
   NA
 }
-
 result <- stats %>%
   distinct(Gene_1, Gene_2) %>%
   rowwise() %>%
@@ -305,7 +293,6 @@ calculate_fold_change <- function(stats, gene1, gene2) {
   if (length(fc1) > 0 && length(fc2) > 0) return((fc1 / fc2) / 2)
   NA
 }
-
 fold_change_results <- stats %>%
   distinct(Gene_1, Gene_2) %>%
   rowwise() %>%
@@ -316,38 +303,30 @@ fold_change_results <- stats %>%
 post_hoc <- full_join(result, fold_change_results, by = c("Gene_A","Gene_B")) %>% na.omit()
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
-stopImplicitCluster()
 cat(" \033[032mStatistics calculated.\033[39m \n")
 
 if (no_viz) {
   cat("[INFO] Visualzation disabled (--no-viz).\n")
 } else {
   
-  # Build igraph from averaged network
+  ## ---- network viz: HTML + PDF (edge width by Absolute_Risk_CI_high; color by RR) ----
   net <- graph_from_graphnel(as.graphNEL(avg_boot))
   if (vcount(net) < 2 || ecount(net) == 0) stop("Network is too small or has no edges for visualization.")
   
-  # Layout once (so HTML and PDF share coordinates)
+  # shared layout
   set.seed(42)
   layout_fr <- igraph::layout_with_fr(net)
-  coords <- data.frame(
-    name = igraph::V(net)$name,
-    x = layout_fr[,1],
-    y = layout_fr[,2],
-    stringsAsFactors = FALSE
-  )
+  coords <- data.frame(name = igraph::V(net)$name, x = layout_fr[,1], y = layout_fr[,2], stringsAsFactors = FALSE)
   
-  # visNetwork data frames
   visDat <- toVisNetworkData(net)
   nodes <- visDat$nodes
   edges <- visDat$edges
   
-  # Keep only nodes we can label/classify (present in metadata)
+  # keep valid nodes; drop edges referencing removed nodes
   nodes <- nodes[nodes$id %in% valid_genes, ]
-  # Drop edges that reference removed nodes
   edges <- edges[edges$from %in% nodes$id & edges$to %in% nodes$id, , drop = FALSE]
   
-  # Node groups/colors from metadata
+  # node groups/colors
   nodes$group <- lookup[nodes$id]
   palette1 <- RColorBrewer::brewer.pal(8, "Set3")
   palette2 <- RColorBrewer::brewer.pal(8, "Set2")
@@ -356,21 +335,14 @@ if (no_viz) {
   color_palette <- c(palette1, palette2, palette3, palette4)
   unique_groups <- unique(nodes$group)
   color_palette <- color_palette[1:length(unique_groups)]
-  
-  if (length(unique_groups) > length(color_palette)) {
-    color_palette <- rep(color_palette, length.out = length(unique_groups))
-  }
-  
+  if (length(unique_groups) > length(color_palette)) color_palette <- rep(color_palette, length.out = length(unique_groups))
   group_color_lookup <- setNames(color_palette, unique_groups)
   nodes$color <- group_color_lookup[nodes$group]
   
-  # Attach FR layout coords to nodes by id
-  nodes <- nodes %>%
-    left_join(coords, by = c("id" = "name"))
+  # attach coords
+  nodes <- nodes %>% left_join(coords, by = c("id" = "name"))
   
-  # Edge width/color from stats:
-  # - Width = max(Absolute_Risk_CI_high) per unordered pair
-  # - Color = red if min(Relative_Risk_Mean) < 1 for that pair, else black
+  # width/color from stats (unordered pair aggregation)
   stats_pairs <- stats %>%
     transmute(
       Gene_lo = pmin(as.character(Gene_1), as.character(Gene_2)),
@@ -388,80 +360,59 @@ if (no_viz) {
       .groups   = "drop"
     ) %>%
     mutate(
-      width_val = ifelse(is.finite(width_val) & width_val > 0, width_val, NA_real_),
+      width_val  = ifelse(is.finite(width_val) & width_val > 0, width_val, NA_real_),
       edge_color = ifelse(rr_min < 1, "red", "black")
     )
   
   edges <- edges %>%
-    mutate(
-      pair_key = paste(
-        pmin(as.character(from), as.character(to)),
-        pmax(as.character(from), as.character(to)),
-        sep = "||"
-      )
-    ) %>%
+    mutate(pair_key = paste(pmin(as.character(from), as.character(to)),
+                            pmax(as.character(from), as.character(to)),
+                            sep = "||")) %>%
     left_join(pair_summ, by = "pair_key")
   
-  # Compute visual width (scale to 1..5)
   edges$width <- scales::rescale(replace_na(edges$width_val, 0), to = c(1, 5))
   edges$color <- ifelse(is.na(edges$edge_color), "black", edges$edge_color)
   
-  # Legend entries for groups
-  lnodes <- data.frame(color = color_palette,
-                       label = unique_groups,
-                       font.color = 'white')
+  lnodes <- data.frame(color = color_palette, label = unique_groups, font.color = 'white')
   
-  # ---- HTML ----
+  ##---- HTML ----
   network <- visNetwork(nodes = nodes, edges = edges, width = '100%', height = 900) %>%
     visNodes(size = 20, color = list(highlight = 'yellow'), font = list(size = 25)) %>%
     visEdges(smooth = list(enabled = TRUE, type = 'diagonalCross', roundness = 0.1),
-             physics = FALSE, color = "black") %>%  # base color; individual edge colors applied from edges$color
+             physics = FALSE, color = "black") %>%
     visIgraphLayout(layout = "layout_with_fr", type = 'full') %>%
     visOptions(highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE, labelOnly = TRUE),
                nodesIdSelection = TRUE) %>%
     visLegend(addNodes = lnodes, width = 0.1, position = 'left',
               main = 'Variable Type', ncol = 2, useGroups = FALSE)
-  
   visSave(network, "Bayesian_Network.html", background = "#F5F4F4")
   
-  # ---- PDF ----
-  # Build a tidygraph, then join node coords/colors and edge attrs
-  tbl <- as_tbl_graph(net)
-  
-  # Node attrs (coords + color)
-  node_data <- nodes %>%
-    transmute(name = id, x, y, node_color = unname(color))
-  
-  tbl <- tbl %>%
+  ##---- PDF ----
+  tbl <- as_tbl_graph(net) %>%
     activate(nodes) %>%
-    left_join(node_data, by = "name")
+    left_join(nodes %>% transmute(name = id, x, y, node_color = unname(color)), by = "name")
   
-  # Edge attrs from edges df by unordered pair key
   edge_attrs <- edges %>%
-    transmute(
-      pair_key = paste(pmin(from, to), pmax(from, to), sep = "||"),
-      width,
-      color
-    )
+    transmute(pair_key = paste(pmin(as.character(from), as.character(to)),
+                               pmax(as.character(from), as.character(to)),
+                               sep = "||"),
+              width, color)
   
   node_names <- tbl %>% activate(nodes) %>% pull(name)
-  
   tbl <- tbl %>%
     activate(edges) %>%
     mutate(pair_key = paste(pmin(node_names[from], node_names[to]),
                             pmax(node_names[from], node_names[to]),
                             sep = "||")) %>%
     left_join(edge_attrs, by = "pair_key") %>%
-    mutate(
-      width = replace_na(width, 1),
-      color = replace_na(color, "black")
-    )
+    mutate(width = replace_na(width, 1),
+           color = replace_na(color, "black"))
   
   p <- ggraph(tbl, layout = "manual", x = x, y = y) +
     geom_edge_link(aes(edge_width = width, edge_colour = color),
                    lineend = "round", show.legend = TRUE) +
     scale_edge_width(range = c(1, 3), guide = "none") +
-    scale_edge_colour_identity(name = "Edge",
+    scale_edge_colour_identity(name = "Edge (RR<1 = red)",
                                labels = c("black" = "RR >= 1", "red" = "RR < 1"),
                                breaks = c("black", "red"),
                                guide = "legend") +
@@ -479,3 +430,4 @@ if (no_viz) {
   cat("\n \033[32mSaved Bayesian_Network.html and Bayesian_Network.pdf.\033[39m\n\n")
   
 }
+

@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 
-"""
-
-ReGAIN and its analytical modules are under Copyright 2024 University of Utah.
-
-Authors:
-    Elijah R. Bring Horvath, Mathew G. Stein, Matthew A. Mulvey, E. Javier Hernandez, Jaclyn M. Winter
-
-"""
-
 import argparse, logging, sys, subprocess, os
 from datetime import datetime
+from . import __version__
 
 def run_bnL(args):
     dir_of_executable = os.path.dirname(os.path.realpath(__file__))
@@ -84,7 +76,7 @@ def main():
     parser = argparse.ArgumentParser(prog='regain',
                                      description='ReGAIN: Resistance Gene Association and Inference Network',
                                      epilog=" \033[92mFor detailed instructions, visit: https://github.com/ERBringHorvath/regain_cl\033[0m")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s v.1.5.3')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s {__version__}')
 
     subparsers = parser.add_subparsers(dest='command')
     

@@ -1,0 +1,2 @@
+recursive-include src/regain *.sh *.r
+include README.md LICENSE

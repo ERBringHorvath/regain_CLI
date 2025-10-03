@@ -1,0 +1,48 @@
+{% set name = "regain" %}
+{% set version = "1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/ERBringHorvath/regain_CLI/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x.x.x") }}
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=3.10
+    - biopython
+    - pandas
+    - blast
+
+test:
+  requires:
+    - python
+  commands:
+    - regain --version
+
+about:
+  home: https://github.com/ERBringHorvath/regain_CLI
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: "ReGAIN: A tool for quantifying probabilistic patterns of antibiotic resistance gene co-occurrence."
+  description: |
+    
+
+extra:
+  recipe-maintainers:
+    - ERBringHorvath

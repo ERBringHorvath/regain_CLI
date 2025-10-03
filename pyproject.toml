@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regain-cli"
+version = "1.6.0"  # keep in sync with src/regain/__init__.py
+description = "ReGAIN: Resistance Gene Association and Inference Network CLI"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}   # or your license
+authors = [{name = "Your Name", email = "you@example.com"}]
+requires-python = ">=3.9"
+dependencies = []  # (Python deps only; R deps go in Bioconda later)
+
+[project.scripts]
+regain = "regain.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+regain = ["*.r", "*.sh", "demo_datasets/*"]
