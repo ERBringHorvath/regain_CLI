@@ -1,4 +1,6 @@
 #!/usr/bin/env Rscript
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 University of Utah
 
 suppressPackageStartupMessages({ library(optparse) })
 
