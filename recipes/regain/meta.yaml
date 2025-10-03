@@ -1,4 +1,4 @@
-{% set name = "regain" %}
+{% set name = "regain-cli" %}
 {% set version = "1.6.2" %}
 
 package:
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/ERBringHorvath/regain_CLI/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: a26ea55470b537313aea766105fabe6102136ef4ec4255e16d68a86551060703
+  sha256: 1217fab5170fe1d212814f8acf7b892db2658c14d4df4cadb4a615679d44696a
 
 build:
   noarch: python
@@ -15,6 +15,8 @@ build:
   number: 0
   entry_points:
     - regain = regain.cli:main
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x.x.x") }}
 
 requirements:
   host:
@@ -68,9 +70,14 @@ test:
 
 about:
   home: https://github.com/ERBringHorvath/regain_CLI
-  summary: "ReGAIN: Resistance Gene Association and Inference Network — datasets + Bayesian network analysis for bacterial resistance gene co-occurrence."
+  summary: "Bayesian-network pipeline for ARG/virulence co-occurrence analysis."
   license: MIT
   license_file: LICENSE
+  description: |
+    ReGAIN is a reproducible CLI for quantifying co-occurrence among
+    bacterial antibiotic/heavy metal resistance and virulence genes using Bayesian network
+    structure learning (bnlearn/gRain) and post-hoc metrics. It includes
+    dataset curation, visualization, and multivariate analysis.
 
 extra:
   recipe-maintainers:

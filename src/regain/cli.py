@@ -302,7 +302,7 @@ def main(argv=None):
     network_parser.add_argument('-i', '--input', required=True, help='Bootstrapped network .rds')
     network_parser.add_argument('-d', '--data', required=True, help='Input data matrix CSV')
     network_parser.add_argument('-M', '--metadata', required=True, help='Metadata CSV')
-    network_parser.add_argument('-s', '--statistics_results', required=True, help='Stats CSV from bnS/bnL')
+    network_parser.add_argument('-s', '--statistics-results', required=True, help='Stats CSV from bnS/bnL')
     network_parser.add_argument('--threshold', type=float, default=0.5, help='Averaged network threshold (default 0.5)')
     network_parser.add_argument('--seed', type=int, default=42, help='Layout seed (default 42)')
     network_parser.add_argument('--html-out', dest='html_out', default='Bayesian_Network.html', help='HTML output filename')

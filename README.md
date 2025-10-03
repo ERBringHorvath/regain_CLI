@@ -1,19 +1,28 @@
-# <ins>**ReGAIN Installation and User guide**</ins> 
+# ReGAIN: <ins>Re</ins>sistance <ins>G</ins>ene <ins>A</ins>ssociation and <ins>I</ins>nference <ins>N</ins>etwork
 
 <img src="https://github.com/user-attachments/assets/149bad0c-fb6b-44c7-a8c6-a131eb979172" alt="image" width="363" height="418"/>
 
 _________________________________________________________________________________
+![Python](https://img.shields.io/badge/python-3.10%20-green)
+![R](https://img.shields.io/badge/R-%E2%89%A5%204-blue)
+[![License](https://img.shields.io/github/license/ERBringHorvath/regain_CLI)](./LICENSE)
+![OS](https://img.shields.io/badge/platform-linux--64%20%7C%20osx--64%20%7C%20osx--arm64-red)
+[![Issues](https://img.shields.io/github/issues/ERBringHorvath/regain_CLI)](https://github.com/OWNER/REPO/issues)
+_________________________________________________________________________________
+
+# <ins>**ReGAIN Installation and User guide**</ins> 
+
 
 **Prerequisites**
 
 Ensure that you have the following prerequisites installed on your system:
 
-Python (version 3.8 or higher)
+Python (version 3.10 or higher)
 
 R (version 4 or higher)
 
 NCBI AMRfinderPlus version 4.0.3 <br />
-NCBI BLAST+ (Included in AMRfinderPlus installation)
+NCBI BLAST+
 
 [Install R](https://www.r-project.org/)
 
@@ -47,15 +56,16 @@ Download [miniforge](https://github.com/conda-forge/miniforge/)
 * `git clone https://github.com/ERBringHorvath/regain_CLI`
 
 7. Install Python dependencies
-* `pip install -r requirements.txt` or `pip3 install -r requirements.txt`
+* `cd /path/to/regain_CLI`
+* `pip install -e .`
 
 8. Add ReGAIN to your PATH
 * Add this line to the end of `.bash_profile`/`.bashrc` (Linux) or `.zshrc` (macOS):
 
-`export PATH="$PATH:/path/to/regain_CLI/bin"`
+`export PATH="$PATH:/path/to/regain_CLI/src/regain"`
 
 * Replace `/path/to/regain_CLI/bin` with the actual path to the directory containing the executable. <br />
-Whatever the initial directory, this path should end with `/regain_CLI/bin`
+Whatever the initial directory, this path should end with `/regain_CLI/src/regain`
 
 9. Save the file and restart your terminal or run `source ~/.bash_profile` or `source ~/.zshrc`
 
@@ -63,11 +73,26 @@ Whatever the initial directory, this path should end with `/regain_CLI/bin`
 * `regain --version`
 * use `-h`, `--help`, to bring up the help menu
 * `regain --help`
+* run `regain --module-health` to check status of ReGAIN modules
+    * You should see:
+
+    ```
+    ReGAIN Module Status Report
+    - AMR.run: Available
+    - matrix.run: Available
+    - curate.run: Available
+    - extract.run: Available
+    - combine.run: Available
+    - bnS: Available
+    - bnL: Available
+    - MVA: Available
+    - network: Available
+
+    ```
 
 NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions <br />
 to execute these scripts. If you run `regain --version` and see `permission denied: regain`, Navigate to <br />
-`regain/bin`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --version` <br />
-and you should see something similar to: `regain v.1.5.0`
+`regain/src/regain`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --version` <br />
 
 _________________________________________________________________________________
 
@@ -129,7 +154,8 @@ ________________________________________________________________________________
 
 # **Dataset Creation** 
 
-**NOTE**: variable names <ins>**cannot**</ins> contain special characters–this transformation is automated during dataset creation <br />
+### NOTE: variable names <ins>cannot</ins> contain special characters; this transformation is automated during dataset creation <br />
+Examples of special characters: '"/,().[]
 
 ## Module 1.1 `regain matrix`
                                        
@@ -154,8 +180,9 @@ defined by** `-d`/`--directory`
 
 `filtered_matrix.csv`: presence/absence matrix of genes <br />
 `metadata.csv`: file containing genes identified in AMRfinderPlus analysis <br />
-`combined_AMR_results_unfiltered.csv`: concatenated file of all AMRfinder/Plus results; this file contains contig and nucleotide location of all identified genes <br />
-**If** `--report-all` **is used:** <br />
+`combined_AMR_results_unfiltered.csv`: concatenated file of all AMRfinder/Plus results; this file contains contig and nucleotide location of all identified genes
+
+If `--report-all` is used: <br />
 `unfiltered_matrix.csv`: presence/absence matrix of all genes identified, regardless of `--min`/`--max` thresholds
 
 _________________________________________________________________________________
@@ -168,11 +195,11 @@ ________________________________________________________________________________
 `-M`, `--metadata`, file containing gene names and descriptions <br />
 `-o`, `--output_boot`, output bootstrap file <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
-`-n`, `--number_of_boostraps`, how many bootstraps to run (suggested 300-500) <br />
-`-r`, `--number-of-resamples`, how many data resamples you want to use (suggested 100) <br />
-`--blacklist`, pptional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
-`--iss`, maginary sample size for BDe score (default = 10) <br/>
-`--no-viz`, Skip HTML/PDF visualization (for use if specific options are wanted, see `regain network`)
+`-n`, `--number_of_boostraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
+`-r`, `--number-of-resamples`, how many data resamples you want to use (suggested minimum of 100) <br />
+`--blacklist`, optional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
+`--iss`, imaginary sample size for BDe score (default = 10) <br/>
+`--no-viz`, Skip HTML/PDF visualization (for use if specific options are wanted, see [`regain network`](#regain-accessory-modules))
 
 **bnL only:**
 
@@ -180,21 +207,22 @@ ________________________________________________________________________________
 
 **Module 2 example usage:**
 
-**NOTE: We suggest using between a minimum of 300 to 500 bootstraps and 100 resamples**
+**NOTE: We suggest using between a <ins>minimum</ins> of 300 to 500 bootstraps and >100 resamples when possible**
 
 `bnS`, Bayesian network structure learning analysis for less than 100 genes <br />
 `bnL`, Bayesian network structure learning analysis for 100 genes or greater
 
 For less than 100 genes:
 
-`regain bnS -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 100`
+`regain bnS -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 500 --blacklist list.csv`
                                             
 For 100 or more genes:
 
-`regain bnL -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 100`
+`regain bnL -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 500 --blacklist list.csv`
 
 **Output files:**
 
+`<output>.rds`, bootstrapped network <br/>
 `Query_Results.csv`, results file of all conditional probability and relative risk values <br />
 `post_hoc_analysis.csv`, results file of all bidirectional probability and fold change scores <br />
 `Bayesian_Network.html`, interactive Bayesian network
@@ -317,7 +345,7 @@ In the event users want to supplement the `regain AMR` results with a custom set
 NOTE: in order for `regain combine` to function properly, do not modify values in column 1 (`file`) of the data matrix files
 
 _________________________________________________________________________________
-# **ReGAIN Accessary Modules**
+# **ReGAIN Accessory Modules**
 
 **Stand Alone Network Visualization**
 
@@ -326,17 +354,25 @@ ________________________________________________________________________________
 `-i`, `--input`, input RDS file generated from `bnS`/`bnL` analysis <br />
 `-d`, `--data`, input filtered data matrix file <br />
 `-M`, `--metadata`, input metadata file <br />
-`-s`, `--statistics_results`, input 'Results.csv' file from `bnS`/`bnL` analysis
+`-s`, `--statistics-results`, input 'Results.csv' file from `bnS`/`bnL` analysis <br/>
+`--threshold`, average network threshold (Default = 0.5) <br/>
+`--seed`, set seed for Fruchterman-Reingold force-directed layout algorithm (PDF only, Default = 42) <br/>
+`--html-out`, HTML output file name <br/>
+`--pdf-out`, PDF output file name <br/>
+`-b`, `--blacklist`, optional blacklist CSV (no header): from,to <br/>
+`--width-metric`, edge width metric selection (auto, abs_mean, abs_ci, cp_ci, cp_mean) (Default = abs_ci) <br/>
+`--rr-threshold`, relative risk edge color threshold (Default = 1, <1: red, >=1: black)
 
 **Example usage:**
 
 `regain network -i network.rds -d matrix_filtered.csv -M metadata.csv -s Results.csv`
 
-This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed
+This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed or specific options are wanted
 
-**Output:**
+**Default Output:**
 
 `Bayesian_Network.html`, interactive Bayesian network <br />
+`Bayesian_Network.pdf`, static network generated using Fruchterman-Reingold force-directed layout algorithm
 _________________________________________________________________________________
 
 **Multidimensional Analyses**
@@ -345,14 +381,16 @@ ________________________________________________________________________________
 
 **Currently supported measures:**
 
-`manhattan`, `euclidean`, `canberra`, `clark`, `bray`, `kulczynski`, `jaccard`, `gower`, <br />
-`horn`, `mountford`, `raup`, `binomial`, `chao`, `cao`, `mahalanobis`, `altGower`, `morisita`, <br />
-`chisq`, `chord`, `hellinger`
+`manhattan`, `euclidean`, `canberra`, `clark`, `bray`, `kulczynski`, <br/>
+`jaccard`, `gower`, `altGower`, `morisita`, `horn`, `mountford`, `raup`, <br/>
+`binomial`, `chao`, `cao`, `chord`, `hellinger`, `aitchison`, `mahalanobis`
+
+`regain MVA`
                                            
 `-i`, `--input`, input file in CSV format <br />
-`-m`, `--method`, options: manhattan, euclidean, canberra, clark, bray, kulczynski, jaccard, gower, altGower, morisita, horn, mountford, raup, binomial, chao, cao, chord, hellinger, aitchison, mahalanobis <br />
+`-m`, `--method`, options:  <br />
 `--k`, k for k-means; 0 = auto (2..10) <br/>
-`-C`, `--confidence`, Ellipse confidence <br/>
+`-C`, `--confidence`, Ellipse confidence (Default = 0.95) <br/>
 `--seed`, set seed for reproducibility (default = 42) <br/>
 `--label`, apply labels to data points [none, auto, all] (default = auto) <br/>
 `--point-size`, size of data points (default = 3.5) <br/>
@@ -368,7 +406,7 @@ ________________________________________________________________________________
                                        
 **Module 3 example usage:**
 
-`regain MVA -i matrix.csv -m jaccard -c 3 -C 0.75`
+`regain MVA -i matrix.csv -m jaccard --k 0 --pcoa-correction auto`
 
 **NOTE: the MVA analysis will generate 2 files: a PNG and a PDF of the plot**
 
