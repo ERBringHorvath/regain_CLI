@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regain-cli"
-version = "1.6.0"  # keep in sync with src/regain/__init__.py
+version = "1.6.1"  # keep in sync with src/regain/__init__.py
 description = "ReGAIN: Resistance Gene Association and Inference Network CLI"
 readme = "README.md"
 license = {text = "BSD-3-Clause"}   # or your license
