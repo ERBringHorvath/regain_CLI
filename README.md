@@ -236,7 +236,7 @@ gene2, gene1
 
 Additionally, blacklists should be used with caution; ideally, only 'imposible' variables should be blacklisted. An example of this would be a gene with 2 different mutations at the same site (e.g., *gyrA_S83D* and *gyrA_S83E*). 
 
-## Stand Alone Network Visualization (for use if `--no-viz` is passed)
+## Standalone Network Visualization (for use if `--no-viz` is passed)
 
 `regain network`
 
