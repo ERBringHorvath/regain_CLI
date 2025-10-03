@@ -1,5 +1,5 @@
 {% set name = "regain" %}
-{% set version = "1.6.1" %}
+{% set version = "1.6.2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,10 +7,11 @@ package:
 
 source:
   url: https://github.com/ERBringHorvath/regain_CLI/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: <fill_me>
+  sha256: a26ea55470b537313aea766105fabe6102136ef4ec4255e16d68a86551060703
 
 build:
   noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv"
   number: 0
   entry_points:
     - regain = regain.cli:main
