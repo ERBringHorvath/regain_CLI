@@ -87,7 +87,6 @@ Whatever the initial directory, this path should end with `/regain_CLI/src/regai
     - bnL: Available
     - MVA: Available
     - network: Available
-
     ```
 
 NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions <br />
