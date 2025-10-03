@@ -317,7 +317,7 @@ def main(argv=None):
     mva_parser = subparsers.add_parser('MVA', help='Multivariate analysis (PCoA + k-means + ellipses)')
     mva_parser.add_argument('-i','--input', required=True, help='Input data file in CSV format')
     mva_parser.add_argument('-m','--method', default='euclidean',
-                            help='Distance method (see R help)')
+                            help='Distance: manhattan, euclidean, canberra, clark, bray, kulczynski, jaccard, gower, altGower, morisita, horn, mountford, raup, binomial, chao, cao, chord, hellinger, aitchison, mahalanobis')
     mva_parser.add_argument('--k', type=int, default=1, help='k for k-means; 0 = auto (2..10)')
     mva_parser.add_argument('-C','--confidence', type=float, default=0.95, help='Ellipse confidence')
     mva_parser.add_argument('--seed', type=int, default=42)

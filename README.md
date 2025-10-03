@@ -350,9 +350,21 @@ ________________________________________________________________________________
 `chisq`, `chord`, `hellinger`
                                            
 `-i`, `--input`, input file in CSV format <br />
-`-m`, `--method`, measure of distance method <br />
-`-c`, `--centers`, number of centers (1-10) <br />
-`-C`, `--confidence`, confidence interval for ellipses <br />
+`-m`, `--method`, options: manhattan, euclidean, canberra, clark, bray, kulczynski, jaccard, gower, altGower, morisita, horn, mountford, raup, binomial, chao, cao, chord, hellinger, aitchison, mahalanobis <br />
+`--k`, k for k-means; 0 = auto (2..10) <br/>
+`-C`, `--confidence`, Ellipse confidence <br/>
+`--seed`, set seed for reproducibility (default = 42) <br/>
+`--label`, apply labels to data points [none, auto, all] (default = auto) <br/>
+`--point-size`, size of data points (default = 3.5) <br/>
+`--alpha`, opacity of data points (default = 0.75) <br/>
+`--no-ellipses`, do not layer confidence ellipses <br/>
+`--psuedocount`, for Aitchison method (default = 1e-6) <br/>
+`--save-dist`, save distances to CSV <br/>
+`--dist-out`, manually name output distance file <br/>
+`--png-out`, manually name output PNG <br/>
+`--pdf-out`, manually name output PDF <br/>
+`--coords-out`, manually name output coordinate file (default = MVA_coordinates.csv) <br/>
+`--pcoa-correction`, apply PCoA correction [auto, none, lingoes, cailliez] (default = auto)
                                        
 **Module 3 example usage:**
 
