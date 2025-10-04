@@ -1,5 +1,5 @@
 {% set name = "regain-cli" %}
-{% set version = "1.6.2" %}
+{% set version = "1.6.3" %}
 
 package:
   name: {{ name|lower }}
@@ -31,7 +31,7 @@ requirements:
     - biopython
     - pandas
     # R runtime + packages used by bnS/bnL/MVA/visualize:
-    - r-base >=4.2
+    - r-base >=4.4
     - r-optparse
     - r-dplyr
     - r-tidyr
