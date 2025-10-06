@@ -3,79 +3,88 @@
 <img src="https://github.com/user-attachments/assets/149bad0c-fb6b-44c7-a8c6-a131eb979172" alt="image" width="363" height="418"/>
 
 _________________________________________________________________________________
+[![bioconda](https://img.shields.io/conda/v/bioconda/regain-cli?color=yellow&logo=anaconda&label=bioconda)](https://anaconda.org/bioconda/regain-cli)
 ![Python](https://img.shields.io/badge/python-3.10%20-green)
 ![R](https://img.shields.io/badge/R-%E2%89%A5%204-blue)
-[![License](https://img.shields.io/github/license/ERBringHorvath/regain_CLI)](./LICENSE)
+[![License](https://img.shields.io/github/license/ERBringHorvath/regain_CLI?color=lavender)](./LICENSE)
 ![OS](https://img.shields.io/badge/platform-linux--64%20%7C%20osx--64%20%7C%20osx--arm64-red)
 [![Issues](https://img.shields.io/github/issues/ERBringHorvath/regain_CLI)](https://github.com/OWNER/REPO/issues)
 _________________________________________________________________________________
+# ReGAIN Overview
+Antimicrobial resistance is driven not only by single genes but by coordinated gene sets that co-occur and move on mobile elements, yet researchers lack a unified, reproducible way to quantify these patterns across genomic populations. The <ins>Re</ins>sistance <ins>G</ins>ene <ins>A</ins>ssociation and <ins>I</ins>nference <ins>N</ins>etwork (ReGAIN) is an open-source platform that utilizes Bayesian network structure learning to infer probabilistic co-occurrence among resistance and virulence genes in clinically important bacterial pathogens. ReGAIN delivers interpretable metrics (conditional probability, relative risk, absolute risk difference, confidence intervals) and post-hoc bidirectional probability scores, enabling detection of synergistic and mutually exclusive gene relationships. By standardizing analyses across species and studies, ReGAIN supports surveillance, hypothesis generation, and stewardship by highlighting gene constellations linked to multidrug resistance and potential co-selection of resistance determinants.
 
-# <ins>**ReGAIN Installation and User guide**</ins> 
+### Explanation of Probability Metrics Used By ReGAIN
 
+1. Conditional Probability
+    * Conditional probability is described as the probability of observing Variable A given the presence of Variable B within a given dataset, *P(**A**|**B**)*
+    * This value is reported on a scale of 0–1 (conditional probability of 0.5 = 50%)
+2. Absolute Risk Difference
+    * Absolute risk difference is defined as the conditional probability of observing Variable A given the presence of Variable B <ins>minus</ins> the conditional probability of observing Variable A in the *absence* of Variable B, *P(**A**|**B**) - P(**A**|&not;B)*
+    * This value is reported on a scale of -1–1; negative values can occurr if *P(**A**|&not;B)* >> *P(**A**|**B**)* and indicate a strong negative probabilistic relationship
+3. Relative Risk
+    * Relative risk is a ratio of the conditional probability of observing Variable A given the presence of Variable B to the conditional probability of observing Variable A given the *absence* of Variable B, *P(**A**|**B**)* / *P(**A**|&not;B)*
+        * Relative risk < 1, negative relationship
+        * Relative risk > 1, positive relationship
+        * Relative risk = 1, neutral relationship (variable independence)
+4. Baseline risk (`bnS` pipeline only)
+    * Baseline risk of outcome: the % occurrence of Variable B in the dataset
+    * This value will be identical for all "Variable B's" within a given dataset
+    * Example: Gene 1 has a baseline risk of 0.12; this indicates that 12% of the genomic population encodes Gene 1. 
 
-**Prerequisites**
+**Post-Hoc Analyses**
 
-Ensure that you have the following prerequisites installed on your system:
+A relationship between two variables may be directionally asymmetric — that is, P(A | B) does not necessarily equal P(B | A) — because the conditional dependencies that determine A given B may differ from those that determine B given A (e.g., knowing that it’s raining (B) changes the probability that the grass is wet (A), but knowing that the grass is wet doesn’t change the probability of rain in exactly the same way — hence P(A | B) ≠ P(B | A).) To better inform the direction of the relationship, ReGAIN calculates two post-hoc scores.
 
-Python (version 3.10 or higher)
-
-R (version 4 or higher)
-
-NCBI AMRfinderPlus version 4.0.3 <br />
-NCBI BLAST+
-
-[Install R](https://www.r-project.org/)
-
+5. Bidirectional Probability Score (BDPS)
+    * The ratio of the conditional probability *P(A|B)* to the conditional probability *P(B|A)*
+        * BDPS > 1, *P(A|B)* > *P(B|A)*
+        * BDPS < 1, *P(A|B)* < *P(B|A)*
+        * BDPS = 1, equal bidirectional strength
+6. Fold Change (FC)
+    * The ratio of the relative risk (*P(A|B)* / *P(A|&not;B)* to the relative risk *P(B|A)* / *P(B|&not;A)*) / 2
+    * Interpreted similarly to BPDS, with equal bidirectional strength being 0.5
 _________________________________________________________________________________
 
-## Install ReGAIN Dependencies
+# Table of Contents
 
-**We suggest that ReGAIN and all prerequisites are installed within a Conda environment**
+* [Installation](#regain-installation)
+    * [Bioconda Installation](#bioconda-installation)
+    * [Standalone Installation](#standalone-installation)
+* [Programs and Example Usage](#programs-and-example-usage)
+    * [Basic Network Tutorial](#bayesian-network-structure-learning-basic-tutorial)
+* [Module 1: Gene Identification](#resistance-and-virulence-gene-identification)
+* [Module 1.1: Dataset Creation](#dataset-creation)
+* [Module 2: Bayesian Network Structure Learning](#bayesian-network-structure-learning)
+    * [Network Visualization](#standalone-network-visualization)
+* [ReGAIN Curate](#regain-curate)
+    * [Curate](#regain-curate)
+    * [Sequence Extraction](#regain-extract)
+    * [Combine Datasets](#regain-combine)
+* [Multivariate Analysis](#regain-multivariate-analysis)
+* [Formatting External Data](#formatting-external-data)
+* [Citations](#citations)
+_________________________________________________________________________________
 
-Download [miniforge](https://github.com/conda-forge/miniforge/)
+# <ins>**ReGAIN Installation**</ins> 
 
-1. Create Conda environment and install [NCBI AMRfinderPlus](https://github.com/ncbi/amr/wiki/Install-with-bioconda)
-* `conda create -n regain python=3.10`
-* `source activate regain`
+## Bioconda Installation
 
-2. Install AMRfinderPlus<br/>
-* `conda install -y -c conda-forge -c bioconda ncbi-amrfinderplus`
+1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
+2. `conda create -y -n regain python=3.10 r-base=4.4`
+3. `source activate regain`
+4. `conda install -y bioconda::regain-cli`
 
-3. Check installation
-* `amrfinder -h`
+One-liner:
+`conda create -y -n regain -c bioconda python=3.10 r-base=4.4`
 
-4. Download ARMfinderPlus Database
-* `amrfinder -u`
+Test installation: <br/>
+`regain -h`
+`regain --module-health`
 
-5. Install NCBI BLAST+
-* `conda install -y -c bioconda::blast`
+If these commands execute without error, the installation is successful.
 
-## Install ReGAIN
-
-6. Download ReGAIN to preferred directory
-* `git clone https://github.com/ERBringHorvath/regain_CLI`
-
-7. Install Python dependencies
-* `cd /path/to/regain_CLI`
-* `pip install -e .`
-
-8. Add ReGAIN to your PATH
-* Add this line to the end of `.bash_profile`/`.bashrc` (Linux) or `.zshrc` (macOS):
-
-`export PATH="$PATH:/path/to/regain_CLI/src/regain"`
-
-* Replace `/path/to/regain_CLI/bin` with the actual path to the directory containing the executable. <br />
-Whatever the initial directory, this path should end with `/regain_CLI/src/regain`
-
-9. Save the file and restart your terminal or run `source ~/.bash_profile` or `source ~/.zshrc`
-
-10. Verify installation:
-* `regain --version`
-* use `-h`, `--help`, to bring up the help menu
-* `regain --help`
-* run `regain --module-health` to check status of ReGAIN modules
-    * You should see:
-
+For `regain --module-health`, you should see:
+* You should see:
     ```
     ReGAIN Module Status Report
     - AMR.run: Available
@@ -89,15 +98,94 @@ Whatever the initial directory, this path should end with `/regain_CLI/src/regai
     - network: Available
     ```
 
-NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions <br />
-to execute these scripts. If you run `regain --version` and see `permission denied: regain`, Navigate to <br />
-`regain/src/regain`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --version` <br />
+## Standalone Installation
+### Install ReGAIN Dependencies
 
+For the most cutting-edge ReGAIN releases, we suggest cloning from source
+
+Create Conda environment and install [NCBI AMRFinderPlus](https://github.com/ncbi/amr/wiki/Install-with-bioconda) and BLAST+
+1. `conda create -n regain python=3.10 r-base=4.4`
+2. `source activate regain`
+3. Install AMRfinderPlus<br/>
+    * `conda install -y -c conda-forge -c bioconda ncbi-amrfinderplus`
+4. Check AMRFinder installation
+    * `amrfinder -h` 
+5. Download ARMfinderPlus Database
+    * `amrfinder -u`
+6. BLAST+ is installed as an AMRFinderPlus dependency
+
+One-liner: `conda create -y -n regain -c conda-forge -c bioconda python=3.10 r-base=4.4 ncbi-amrfinderplus`
+
+## Install ReGAIN
+
+6. Download ReGAIN to preferred directory
+* `git clone https://github.com/ERBringHorvath/regain_CLI`
+
+7. Install Python dependencies
+* `cd /path/to/regain_CLI`
+* `pip install .`
+
+**Note:** R dependencies should be installed automatically when running ReGAIN for the first time
+
+8. Add ReGAIN to your PATH
+    * File might be `.bash_profile`, `.bashrc`, `.zshrc` depending on OS and Shell
+    * Add this line to the end of the file:
+
+`export PATH="$PATH:/path/to/regain_CLI/src/regain"`
+
+* Replace `/path/to/regain_CLI/src/regain` with the actual path to the directory containing the executable
+* Whatever the initial directory, this path should end with `/regain_CLI/src/regain`
+
+9. Save the file and restart your terminal or run `source ~/.bashrc` or `source ~/.zshrc`
+10. Verify installation:
+* `regain --version`
+* `regain --help`
+11. Run `regain --module-health` to check status of ReGAIN modules
+    * You should see:
+    ```
+    ReGAIN Module Status Report
+    - AMR.run: Available
+    - matrix.run: Available
+    - curate.run: Available
+    - extract.run: Available
+    - combine.run: Available
+    - bnS: Available
+    - bnL: Available
+    - MVA: Available
+    - network: Available
+    ```
+NOTE: ReGAIN utilizes shell scripts to execute some modules. You may need to modify your permissions 
+to execute these scripts. If you run `regain --version` and see `permission denied: regain`, Navigate to `regain/src/regain`, then run both `chmod +x regain` and `chmod +x *.sh` and rerun `regain --module-health` <br />
 _________________________________________________________________________________
 
 # <ins>**Programs and Example Usage**</ins> 
 
-# **Resistance and Virulence Gene Identification** 
+## Bayesian Network Structure Learning Basic Tutorial
+
+ReGAIN standalone installation comes with a subdirectory called `demo_dataset/` <br/>
+For Bioconda installations, `demo_dataset/` files can be downloaded from this repository <br/>
+* Input files:
+    * Enterococcus_Demo_Dataset.csv
+    * Enterococcus_Demo_Dataset_Metadata.csv
+
+Basic `regain bnS` workflow: <br/>
+`regain bnS -i Enterococcus_Demo_Dataset.csv \` <br/>
+`-M Enterococcus_Demo_Dataset_Metadata.csv \` <br/>
+`-o demo_network -n 500 -r 100 -T 4`
+
+This will generate a Bayesian network using 500 bootstraps and 100 data resamples. Using 4 dedicated cores (`-T 4`), this analysis should take less than 30 minutes to run. If more cores are available, setting `-T` to `8` will decrease runtime. 
+
+* Output files:
+    * `demo_network.rds`
+    * `Query_Results.csv`
+    * `post_hoc_analysis.csv`
+    * `Bayesian_Network.(html and pdf)`
+
+The resulting network will have both red and black edges connecting nodes. By default, ReGAIN colors negatively associated variable edges red (relative risk < 1). Positively associated edges are colored black (relative risk ≥ 1).  
+
+If specific network visualization parameters are desired, see [Module 2](#standalone-network-visualization) Standalone Network Visualization for available options.
+
+## **Resistance and Virulence Gene Identification** 
 
 ## Module 1.0 `regain AMR`
 
@@ -194,7 +282,7 @@ ________________________________________________________________________________
 `-M`, `--metadata`, file containing gene names and descriptions <br />
 `-o`, `--output_boot`, output bootstrap file <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
-`-n`, `--number_of_boostraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
+`-n`, `--number_of_bootstraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
 `-r`, `--number-of-resamples`, how many data resamples you want to use (suggested minimum of 100) <br />
 `--blacklist`, optional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
 `--iss`, imaginary sample size for BDe score (default = 10) <br/>
@@ -236,7 +324,8 @@ gene2, gene1
 
 Additionally, blacklists should be used with caution; ideally, only 'imposible' variables should be blacklisted. An example of this would be a gene with 2 different mutations at the same site (e.g., *gyrA_S83D* and *gyrA_S83E*). 
 
-## Standalone Network Visualization (for use if `--no-viz` is passed)
+## Standalone Network Visualization 
+For use if `--no-viz` is passed or specific network parameters are wanted
 
 `regain network`
 
@@ -346,37 +435,7 @@ NOTE: in order for `regain combine` to function properly, do not modify values i
 _________________________________________________________________________________
 # **ReGAIN Accessory Modules**
 
-**Stand Alone Network Visualization**
-
-`regain network`
-
-`-i`, `--input`, input RDS file generated from `bnS`/`bnL` analysis <br />
-`-d`, `--data`, input filtered data matrix file <br />
-`-M`, `--metadata`, input metadata file <br />
-`-s`, `--statistics-results`, input 'Results.csv' file from `bnS`/`bnL` analysis <br/>
-`--threshold`, average network threshold (Default = 0.5) <br/>
-`--seed`, set seed for Fruchterman-Reingold force-directed layout algorithm (PDF only, Default = 42) <br/>
-`--html-out`, HTML output file name <br/>
-`--pdf-out`, PDF output file name <br/>
-`-b`, `--blacklist`, optional blacklist CSV (no header): from,to <br/>
-`--width-metric`, edge width metric selection (auto, abs_mean, abs_ci, cp_ci, cp_mean) (Default = abs_ci) <br/>
-`--rr-threshold`, relative risk edge color threshold (Default = 1, <1: red, >=1: black)
-
-**Example usage:**
-
-`regain network -i network.rds -d matrix_filtered.csv -M metadata.csv -s Results.csv`
-
-This analysis is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed or specific options are wanted
-
-**Default Output:**
-
-`Bayesian_Network.html`, interactive Bayesian network <br />
-`Bayesian_Network.pdf`, static network generated using Fruchterman-Reingold force-directed layout algorithm
-_________________________________________________________________________________
-
-**Multidimensional Analyses**
-
-## Optional Module 3 `regain MVA`
+## ReGAIN Multivariate Analysis
 
 **Currently supported measures:**
 
@@ -403,15 +462,14 @@ ________________________________________________________________________________
 `--coords-out`, manually name output coordinate file (default = MVA_coordinates.csv) <br/>
 `--pcoa-correction`, apply PCoA correction [auto, none, lingoes, cailliez] (default = auto)
                                        
-**Module 3 example usage:**
+**Example usage:**
 
 `regain MVA -i matrix.csv -m jaccard --k 0 --pcoa-correction auto`
 
 **NOTE: the MVA analysis will generate 2 files: a PNG and a PDF of the plot**
-
 _________________________________________________________________________________
 
-## **Formatting External Data**
+## Formatting External Data
 
 Bayesian network analysis requires both data matrix and metadata files. MVA analysis requires only a data matrix file <br />
 Metadata file <ins>**MUST**<ins> have two column headers. Ideally, 'Gene' and 'GeneClass'. Second column may contain empty rows <br />
@@ -421,9 +479,18 @@ Data matrix <ins>**MUST**<ins> have headers for all columns
 
 _________________________________________________________________________________
 
-# Citing ReGAIN
+# Citations
 
-Resistance Gene Association and Inference Network (ReGAIN): A Bioinformatics Pipeline for Assessing Probabilistic 
-Co-Occurrence Between Resistance Genes in Bacterial Pathogens. <br />
-Bring Horvath, E; Stein, M; Mulvey, MA; Hernandez, EJ; Winter, JM. <br />
+**ReGAIN** <br/>
+Bring Horvath E, Stein M, Mulvey MA, Hernandez EJ, Winter JM. <br />
+Resistance Gene Association and Inference Network (ReGAIN): A Bioinformatics Pipeline for Assessing Probabilistic Co-Occurrence Between Resistance Genes in Bacterial Pathogens. <br />
 *bioRxiv* 2024.02.26.582197; doi: https://doi.org/10.1101/2024.02.26.582197
+
+**AMRFinder** <br/>
+Feldgarden M, Brover V, Haft DH, Prasad AB, Slotta DJ, Tolstoy I, Tyson GH, Zhao S, Hsu CH, McDermott PF, Tadesse DA, Morales C, Simmons M, Tillman G, Wasilenko J, Folster JP, Klimke W. <br/>Validating the AMRFinder Tool and Resistance Gene Database by Using Antimicrobial Resistance Genotype-Phenotype Correlations in a Collection of Isolates. <br/>
+Antimicrob Agents Chemother. 2019 Oct 22;63(11):e00483-19. doi: 10.1128/AAC.00483-19
+
+**AMRFinderPlus** <br/>
+Feldgarden M, Brover V, Gonzalez-Escalona N, Frye JG, Haendiges J, Haft DH, Hoffmann M, Pettengill JB, Prasad AB, Tillman GE, Tyson GH, Klimke W. <br/>
+AMRFinderPlus and the Reference Gene Catalog facilitate examination of the genomic links among antimicrobial resistance, stress response, and virulence. <br/>
+Sci Rep. 2021 Jun 16;11(1):12728. doi: 10.1038/s41598-021-91456-0
