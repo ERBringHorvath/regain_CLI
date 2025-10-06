@@ -313,7 +313,7 @@ For 100 or more genes:
 `<output>.rds`, bootstrapped network <br/>
 `Query_Results.csv`, results file of all conditional probability and relative risk values <br />
 `post_hoc_analysis.csv`, results file of all bidirectional probability and fold change scores <br />
-`Bayesian_Network.html`, interactive Bayesian network
+`Bayesian_Network.html`, interactive Bayesian network <br/>
 `Bayesian_Network.pdf`, static PDF of network using Fruchterman-Reingold force-directed layout algorithm
 
 **NOTE:**<br/>
