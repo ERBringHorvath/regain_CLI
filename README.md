@@ -33,7 +33,7 @@ Antimicrobial resistance is driven not only by single genes but by coordinated g
 
 **Post-Hoc Analyses**
 
-A relationship between two variables may be directionally asymmetric — that is, P(A | B) does not necessarily equal P(B | A) — because the conditional dependencies that determine A given B may differ from those that determine B given A (e.g., knowing that it’s raining (B) changes the probability that the grass is wet (A), but knowing that the grass is wet doesn’t change the probability of rain in exactly the same way — hence P(A | B) ≠ P(B | A).) To better inform the direction of the relationship, ReGAIN calculates two post-hoc scores.
+A relationship between two variables may be directionally asymmetric — that is, *P(A|B)* does not necessarily equal *P(B|A)* — because the conditional dependencies that determine A given B may differ from those that determine B given A (e.g., knowing that it’s raining (B) changes the probability that the grass is wet (A), but knowing that the grass is wet doesn’t change the probability of rain in exactly the same way — hence *P(A|B)* ≠ *P(B|A)*.) To better inform the direction of the relationship, ReGAIN calculates two post-hoc scores.
 
 5. Bidirectional Probability Score (BDPS)
     * The ratio of the conditional probability *P(A|B)* to the conditional probability *P(B|A)*
@@ -70,6 +70,7 @@ ________________________________________________________________________________
 ## Bioconda Installation
 
 1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
+    * As of patch 1.6.3, specifying r-base=4.4 during environment creation isn't necessary
 2. `conda create -y -n regain python=3.10 r-base=4.4`
 3. `source activate regain`
 4. `conda install -y bioconda::regain-cli`
