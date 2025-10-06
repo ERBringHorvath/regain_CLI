@@ -320,8 +320,8 @@ For 100 or more genes:
 If using a blacklist, the CSV file should have no headers and only two columns. Column 1 should be your first variable in your variable pair to blacklist, and column 2 should be your second variable in the pair. Explicit bidirectional blacklisting must be passed, so if 'geneA' and 'geneB' are in the blacklist, they should be listed like:
 
 col1, col2 <br/>
-gene1, gene2 <br/>
-gene2, gene1
+geneA, geneB <br/>
+geneB, geneA
 
 Additionally, blacklists should be used with caution; ideally, only 'imposible' variables should be blacklisted. An example of this would be a gene with 2 different mutations at the same site (e.g., *gyrA_S83D* and *gyrA_S83E*). 
 
