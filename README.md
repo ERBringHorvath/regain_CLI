@@ -70,8 +70,8 @@ ________________________________________________________________________________
 ## Bioconda Installation
 
 1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
-    * As of patch 1.6.3, specifying r-base=4.4 during environment creation isn't necessary
 2. `conda create -y -n regain python=3.10 r-base=4.4`
+    * As of patch 1.6.3, specifying r-base=4.4 during environment creation isn't necessary
 3. `source activate regain`
 4. `conda install -y bioconda::regain-cli`
 
