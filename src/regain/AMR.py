@@ -1,27 +1,6 @@
-"""
-    ReGAIN Copyright 2024 University of Utah
-    
-    Identifies resistance and virulence genes from FASTA files using the AMRfinderPlus tool.
-    
-    This function is part of the ReGAIN suite, designed to analyze genomic sequences to detect
-    antimicrobial resistance (AMR) and virulence factors. Users can specify an organism to target
-    the analysis or conduct a non-specific search across multiple organisms. The function supports
-    multi-threading to expedite analysis.
-
-    This module utilizes the NCBI AMRfinderPlus Software:
-        Feldgarden M, Brover V, Gonzalez-Escalona N, et al. 
-        AMRFinderPlus and the Reference Gene Catalog facilitate examination of the genomic links among antimicrobial resistance, stress response, and virulence. 
-        Sci Rep. 2021;11(1):12728. Published 2021 Jun 16. doi:10.1038/s41598-021-91456-0
-    
-    Parameters:
-        directory (str): Path to the directory containing FASTA files for analysis.
-        organism (str, optional): Specific organism to analyze. If None, analysis is non-specific.
-        threads (int, optional): Number of CPU cores to dedicate to the analysis. Default is 1.
-        output_dir (str): Directory to store the AMRfinder results.
-    
-    Returns:
-        None
-"""
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 University of Utah
 
 import os
 import argparse
@@ -38,7 +17,9 @@ def run(args):
     fasta_extensions = [".fa", ".fasta", ".fna", ".ffn", ".faa", ".frn"]
     organisms = {
         "Acinetobacter_baumannii": "Acinetobacter_baumannii",
+        "Bordetella_pertussis": "Bordetella_pertussis",
         "Burkholderia_cepacia": "Burkholderia_cepacia",
+        "Burkholderia_pseudomallei": "Burkholderia_pseudomallei",
         "Burkholderia_pseudomallei": "Burkholderia_pseudomallei",
         "Citrobacter_freundii": "Citrobacter_freundii",
         "Corynebacterium_diphtheriae": "Corynebacterium_diphtheriae",
