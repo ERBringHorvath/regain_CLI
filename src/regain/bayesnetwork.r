@@ -9,8 +9,8 @@ options(repos = c(CRAN = "https://cloud.r-project.org"),
         dplyr.summarise.inform = FALSE)
 
 opt_list <- list(
-  make_option(c("-i","--boot"),      type="character", help="Bootstrapped network .rds (from bnS/bnL)"),
-  make_option(c("-d","--data"),      type="character", help="Input data matrix CSV (row names in col 1)"),
+  make_option(c("-N","--boot"),      type="character", help="Bootstrapped network .rds (from bnS/bnL)"),
+  make_option(c("-i","--input"),      type="character", help="Input data matrix CSV (row names in col 1)"),
   make_option(c("-M","--metadata"),  type="character", help="Metadata CSV (two columns: gene, class/label)"),
   make_option(c("-s","--stats"),     type="character", help="Stats CSV from bnS/bnL (has Gene_1,Gene_2, RR/CI cols)"),
   make_option(c("-t","--threshold"), type="double", default=0.5, help="Averaged network threshold [default: %default]"),
@@ -27,7 +27,7 @@ parser <- OptionParser(option_list = opt_list,
                        description = "ReGAIN — Standalone Bayesian network visualization")
 opt <- parse_args(parser)
 
-required <- c("boot","data","metadata","stats")
+required <- c("boot","input","metadata","stats")
 miss <- required[ vapply(required, function(k) { v <- opt[[k]]; is.null(v) || !nzchar(trimws(as.character(v))) }, logical(1)) ]
 if (length(miss)) { print_help(parser); stop(paste("Missing required:", paste(miss, collapse=", ")), call.=FALSE) }
 
@@ -46,16 +46,16 @@ suppressPackageStartupMessages({
 
 # ---- inputs ----
 boot_path <- opt$boot
-data_path <- opt$data
+data_path <- opt$input
 meta_path <- opt$metadata
 stats_path <- opt$stats
 thr       <- opt$threshold
 seed      <- opt$seed
-html_out  <- opt$`html-out`
-pdf_out   <- opt$`pdf-out`
+html_out  <- as.character(opt[["html-out"]]) #safer than opt$`html-out`
+pdf_out   <- as.character(opt[["pdf-out"]])
 bl_path   <- opt$blacklist
-width_mode<- tolower(opt$`width-metric`)
-rr_thr    <- opt$`rr-threshold`
+width_mode<- tolower(as.character(opt[["width-metric"]]))
+rr_thr    <- as.numeric(opt[["rr-threshold"]])
 
 stopifnot(file.exists(boot_path), file.exists(data_path), file.exists(meta_path), file.exists(stats_path))
 
@@ -82,7 +82,7 @@ suppressPackageStartupMessages({
 
 # ---- inputs ----
 boot_path <- opt$boot
-data_path <- opt$data
+data_path <- opt$input
 meta_path <- opt$metadata
 stats_path <- opt$stats
 thr       <- opt$threshold
