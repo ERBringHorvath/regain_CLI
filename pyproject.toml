@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regain-cli"
-version = "1.7.0"  # keep in sync with src/regain/__init__.py
+version = "1.7.1" 
 description = "ReGAIN: Resistance Gene Association and Inference Network CLI"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
-authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = ">=3.9"
+authors = [{ name = "ERBringHorvath" }]
+requires-python = ">=3.10"
 dependencies = [
   "pandas>=2.3",        
   "biopython>=1.83",    
