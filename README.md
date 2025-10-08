@@ -283,8 +283,8 @@ ________________________________________________________________________________
 `-M`, `--metadata`, file containing gene names and descriptions <br />
 `-o`, `--output_boot`, output bootstrap file <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
-`-n`, `--number_of_bootstraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
-`-r`, `--number-of-resamples`, how many data resamples you want to use (suggested minimum of 100) <br />
+`-n`, `--bootstraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
+`-r`, `--resamples`, how many data resamples you want to use (suggested minimum of 100) <br />
 `--blacklist`, optional blacklist CSV (no header); 2 columns for variable 1 and variables 2 <br/>
 `--iss`, imaginary sample size for BDe score (default = 10) <br/>
 `--no-viz`, Skip HTML/PDF visualization (for use if specific options are wanted, see [`regain network`](#regain-accessory-modules))
@@ -333,7 +333,7 @@ For use if `--no-viz` is passed or specific network parameters are wanted
 `-i`, `--input`, input RDS file generated from `bnS`/`bnL` analysis <br />
 `-d`, `--data`, input filtered data matrix file <br />
 `-M`, `--metadata`, input metadata file <br />
-`-s`, `--statistics_results`, input 'Results.csv' file from `bnS`/`bnL` analysis <br/>
+`-s`, `--statistics-results`, input 'Results.csv' file from `bnS`/`bnL` analysis <br/>
 `--threshold`, averaged network threshold (default: 0.5) <br/>
 `--seed`, layout seed for Fruchterman-Reingold force-directed layout algorithm (pdf output) <br/>
 `--html-out`, HTML output file name (default: Bayesian_Network.html) <br/>
@@ -362,6 +362,7 @@ a custom set of gene queries, independent of ReGAIN Module 1
 `--max`, maximum gene occurrence threshold (should be less than number of genomes, see NOTE below) <br />
 `--nucleotide-query`, optional; use this to query nucleotide FASTA files <br />
 `--report-all`, optional; use this to return all BLAST hits, regardless of internal identity thresholds <br />
+`--evalue`, optional; set a custom maximum e-value threshold. Default = 1e-5 <br/>
 `--perc`, optional; set a custom minimum percent identity threshold. Default = 90% <br />
 `--cov`, optional; set a custom minimum query coverage threshold. Default = 75% <br />
 `--min-seq-length`, optional; designate minimum allowed query sequence lenght. Use with caution <br />
@@ -393,9 +394,9 @@ Nucleotide sequences are extracted to a multi-FASTA file
 `-f`, `--fasta-directory`, path to genome FASTA files used in ReGAIN curate <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
 `-o`, `--output-fasta`, multi-FASTA file output (`.fa`, `.fas`, `.fasta`, `.fna`, `.faa`) <br />
-`--min-evalue`, optional; for use when `--report-all` flag is used. Sets minimum evalue threshold for sequence extraction <br />
-`--min-perc`, optional; same guidelines as `--min-evalue` <br />
-`--min-cov`, optional; same guidlines as `--min-evalue` and `--min-perc` <br />
+`--evalue`, optional; for use when `--report-all` flag is used. Sets maximum evalue threshold for sequence extraction <br />
+`--perc`, optional; same guidelines as `--evalue` <br />
+`--cov`, optional; same guidlines as `--evalue` and `--min-perc` <br />
 `--translate`, optional; translates extracted nucleotide sequences (see NOTE below)
 
 **ReGAIN Extract example usage:**
