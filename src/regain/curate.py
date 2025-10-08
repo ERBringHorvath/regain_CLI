@@ -17,10 +17,10 @@ def make_blast_db(args, temp_dir):
     # Use the temp_dir for storing the output databases
     output_dir = temp_dir
 
-    input_dir = args.directory
-    extensions = [".fasta", ".fna", ".fa", ".fas", ".faa"]
+    input_dir = args.fasta_directory
+    extensions = [".fasta", ".fna", ".fa", ".fas", ".faa", ".ffn", ".frn"]
 
-    print("\n \033[95mBuilding databases....\033[0m")
+    print("\n \033[93mBuilding databases....\033[0m")
 
     for filename in os.listdir(input_dir):
         if any(filename.endswith(ext) for ext in extensions):
@@ -28,7 +28,7 @@ def make_blast_db(args, temp_dir):
             base_name = os.path.splitext(filename)[0]
             output_file = os.path.join(output_dir, base_name)
 
-            dbtype = 'nucl' if filename.endswith(('.fasta', '.fna', '.fa', '.fas')) else 'prot'
+            dbtype = 'nucl' if filename.endswith(('.fasta', '.fna', '.fa', '.fas', '.ffn', '.frn')) else 'prot'
             cmd = f"makeblastdb -in {input_file} -out {output_file} -dbtype {dbtype}"
             subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -69,7 +69,7 @@ def run_multiblastp(args, temp_dir, report_only_lowest_evalue):
     extensions = ['.fasta', '.fna', '.fa', '.fas', ".faa"]
     fieldnames = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qlen']
 
-    print(" \033[095mSearching databases....\033[0m\n")
+    print(" \033[093mSearching databases....\033[0m\n")
 
     # Define tasks for BLAST execution
     tasks = []
@@ -119,7 +119,7 @@ def run_multiblastp(args, temp_dir, report_only_lowest_evalue):
     if report_only_lowest_evalue is False:
         all_results_csv_path = os.path.join(results_output_dir, "all_results.csv")
         df.to_csv(all_results_csv_path, index=False)
-        print(f" \033[32mAll results saved in {all_results_csv_path}\033[0m")
+        print(f" \033[92mAll results saved in {all_results_csv_path}\033[0m")
 
     # Sorting and filtering
     df = df.sort_values(by=['database', 'query_file_name', 'pident', 'query_coverage', 'evalue'], ascending=[True, True, False, False, True])
@@ -195,7 +195,7 @@ def create_matrix(filtered_df, output_filename='curate_matrix.csv', metadata_fil
         return None
     
     print(f" \033[92mData matrix file saved to {matrix_path}\033[0m\n")
-    print(f" \033[092mMedata data file saved to {metadata_path}\033[0m\n")
+    print(f" \033[92mMedata data file saved to {metadata_path}\033[0m\n")
 
     return matrix_df
 

@@ -15,9 +15,9 @@ options(stringsAsFactors = FALSE)
 opt_list <- list(
   make_option(c("-i","--input"), type="character", help="Input matrix CSV (row.names in col 1)"),
   make_option(c("-M","--metadata"), type="character", help="Metadata CSV (two columns: gene, class/label)"),
-  make_option(c("-o","--output_boot"), type="character", help="Output bootstrapped network filename (.rds)"),
+  make_option(c("-o","--output-boot"), type="character", help="Output bootstrapped network filename (.rds)"),
   make_option(c("-T","--threads"), type="integer", default=2, help="Threads [default: %default]"),
-  make_option(c("-n","--number_of_bootstraps"), type="integer", help="Number of bootstraps (e.g., 300–500)"),
+  make_option(c("-n","--bootstraps"), type="integer", help="Number of bootstraps (e.g., 300–500)"),
   make_option(c("-r","--resamples"), type="integer", help="Number of resamples for querying"),
   make_option(c("-b","--blacklist"), type="character", default=NULL,
               help="Optional blacklist CSV (no header): from,to"),
@@ -33,7 +33,7 @@ opt <- parse_args(parser)
 
 no_viz <- isTRUE(opt$no_viz)
 
-required <- c("input","metadata","output_boot","number_of_bootstraps","resamples")
+required <- c("input","metadata","output-boot","bootstraps","resamples")
 missing <- required[!nzchar(trimws(sapply(required, function(k) as.character(opt[[k]])))) ]
 if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
@@ -61,9 +61,9 @@ suppressPackageStartupMessages({
 ## ---- inputs & echo ----
 input_file  <- opt$input
 metadata_file <- opt$metadata
-output_boot <- if (grepl("\\.rds$", opt$output_boot, ignore.case=TRUE)) opt$output_boot else paste0(opt$output_boot, ".rds")
+output_boot <- if (grepl("\\.rds$", as.character(opt[["output-boot"]]), ignore.case=TRUE)) as.character(opt[["output-boot"]]) else paste0(as.character(opt[["output-boot"]]), ".rds")
 threads     <- opt$threads
-nboots      <- opt$number_of_bootstraps
+nboots      <- opt$bootstraps
 resamples   <- opt$resamples
 iss         <- opt$iss
 blacklist_path <- opt$blacklist
@@ -169,9 +169,9 @@ if (!is.null(blacklist_filtered) && nrow(blacklist_filtered) > 0) {
   combinations <- combinations[keep, , drop = FALSE]
 }
 
-cat(paste("\n \033[32mCores registered:\033[39m", n_cores, "\n"))
-cat(paste("\n \033[32mNumber of queries:\033[39m", nrow(combinations) * length(boosts_list), "\n"))
-cat("\n \033[35mQuerying network. Please be patient.\033[39m\n\n")
+cat(paste("\n \033[92mCores registered:\033[39m", n_cores, "\n"))
+cat(paste("\n \033[92mNumber of queries:\033[39m", nrow(combinations) * length(boosts_list), "\n"))
+cat("\n \033[93mQuerying network. Please be patient.\033[39m\n\n")
 
 compute_gene_stats <- function(gene1, gene2, grain_net, epsilon) {
   # P(gene2 = 1 | gene1 = 1)
@@ -320,7 +320,7 @@ post_hoc <- full_join(result, fold_change_results, by = c("Gene_A","Gene_B")) %>
 write.csv(post_hoc, "post_hoc_analysis.csv", row.names = FALSE)
 
 stopImplicitCluster()
-cat(" \033[032mStatistics calculated.\033[39m \n")
+cat(" \033[092mStatistics calculated.\033[39m \n")
 
 if (no_viz) {
   cat("[INFO] Visualzation disabled (--no-viz).\n")
@@ -479,6 +479,6 @@ if (no_viz) {
     theme(legend.position = "left")
   
   ggsave("Bayesian_Network.pdf", p, width = 14, height = 10, units = "in")
-  cat("\n \033[32mSaved Bayesian_Network.html and Bayesian_Network.pdf.\033[39m\n\n")
+  cat("\n \033[92mSaved Bayesian_Network.html and Bayesian_Network.pdf.\033[39m\n")
   
 }

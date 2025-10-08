@@ -33,8 +33,8 @@ parser <- OptionParser(option_list = opt_list,
                        description = "ReGAIN — Multivariate analysis (distance + PCoA + k-means + ellipses)")
 opt <- parse_args(parser)
 
-save_dist   <- isTRUE(opt$`save-dist`)   || isTRUE(opt$save_dist)
-no_ellipses <- isTRUE(opt$`no-ellipses`) || isTRUE(opt$no_ellipses)
+save_dist   <- isTRUE(opt[["save-dist"]])   || isTRUE(opt$save_dist)
+no_ellipses <- isTRUE(opt[["no-ellipses"]]) || isTRUE(opt$no_ellipses)
 
 req <- c("input")
 missing <- req[ vapply(req, function(k){ v <- opt[[k]]; is.null(v) || !nzchar(trimws(as.character(v))) }, logical(1)) ]
@@ -156,15 +156,15 @@ if (method %in% vegdist_methods) {
 }
 
 if (save_dist) {
-  cat("Writing distance matrix CSV: ", opt$`dist-out`, "\n")
+  cat("Writing distance matrix CSV: ", opt[["dist-out"]], "\n")
   D <- as.matrix(dist_obj)
   rownames(D) <- df$sample; colnames(D) <- df$sample
   write.csv(data.frame(sample = rownames(D), D, check.names=FALSE),
-            opt$`dist-out`, row.names = FALSE)
+            opt[["dist-out"]], row.names = FALSE)
 }
 
 # ---------- ordination (PCoA with correction) ----------
-corr <- tolower(opt$`pcoa-correction`)
+corr <- tolower(opt[["pcoa-correction"]])
 if (!corr %in% c("auto","none","lingoes","cailliez")) stop("pcoa-correction must be auto|none|lingoes|cailliez")
 
 needs_correction <- function(p) {
@@ -230,7 +230,7 @@ do_labels <- match.arg(lab_mode, c("none","auto","all"))
 
 p <- ggplot(coords, aes(x = Axis1, y = Axis2)) +
   theme_bw() +
-  geom_point(aes(color = cluster), alpha = opt$alpha, size = opt$`point-size`, show.legend = FALSE) +
+  geom_point(aes(color = cluster), alpha = opt$alpha, size = opt[["point-size"]], show.legend = FALSE) +
   labs(x = ifelse(!is.na(pct[1]), sprintf("PCo1 (%.2f%%)", pct[1]), "PCo1"),
        y = ifelse(!is.na(pct[2]), sprintf("PCo2 (%.2f%%)", pct[2]), "PCo2")) +
   theme(
@@ -265,10 +265,10 @@ if (!no_ellipses && length(ok_names)) {
 }
 
 # ---------- outputs ----------
-ggsave(filename = opt$`png-out`, plot = p, width = 10, height = 10, dpi = 300)
-ggsave(filename = opt$`pdf-out`, plot = p, width = 10, height = 10)
-write.csv(coords, opt$`coords-out`, row.names = FALSE)
+ggsave(filename = opt[["png-out"]], plot = p, width = 10, height = 10, dpi = 300)
+ggsave(filename = opt[["pdf-out"]], plot = p, width = 10, height = 10)
+write.csv(coords, opt[["coords-out"]], row.names = FALSE)
 
 cat(sprintf("\n\033[32mSaved %s, %s, and %s.\033[39m\n",
-            opt$`png-out`, opt$`pdf-out`, opt$`coords-out`))
-if (save_dist) cat(sprintf("\033[32mSaved %s.\033[39m\n", opt$`dist-out`))
+            opt[["png-out"]], opt[["pdf-out"]], opt[["coords-out"]]))
+if (save_dist) cat(sprintf("\033[32mSaved %s.\033[39m\n", opt[["dist-out"]]))
