@@ -190,16 +190,34 @@ If specific network visualization parameters are desired, see [Module 2](#standa
 
 ## Module 1.0 `regain AMR`
 
-`-d`, `--directory`, path to directory containing genome FASTA files to analyze <br />
-`-O`, `--organism`, optional; specify what organism (if any) you want to analyze (optional flag) <br />
-`-T`, `--threads`, number of cores to dedicate for parallel processing <br />
-`-o`, `--output-dir`, output directory to store AMRfinder results
+`-f`, `--fasta-directory`, path to directory containing genome FASTA files to analyze <br />
+`--mode`, input FASTA file format (nucleotide, protein, combined (required protein FASTA + GFF file); default = nucleotide) <br/>
+`-O`, `--organism`, specify organism for AMRFinderPlus pipeline <br/>
+`-o`, `--output-dir`, output directory path <br/>
+`-T`, `--threads`, specify number of cores to dedicate
+
+Additional options: <br/>
+`--gff`, input GFF file for combined mode <br/>
+`-D`, `--database`, alternate AMRFinderPlus database directory <br/>
+`--no-plus`, run basic AMRFinder analysis (organism non-specific; cannot use with `--organism`) <br/>
+`--name`, prepend a sample/run identifier to AMRFinderPlus output CSV file <br/>
+`--quiet`, suppress AMRFinderPlus status messages <br/>
+`--ident-min`, override minimum percent identity (0-1). Use with caution <br/>
+`--print-node`, add heierarchy node column <br/>
+`--mutation-all`, generate a per-sample point-mutation audit file <br/>
+`--nucleotide-output`, write FASTA file of detected nucleotide regions <br/>
+`--nucleotide-flank5-output`, write FASTA file of detected nucleotide regions + 5' flanking base pairs <br/>
+`--nucleotide-flank5-size`, number of additional 5' flanking base pairs for flank output <br/>
+`--protein-output`, write FASTA of detected proteins from input protein FASTA <br/>
+`--organism-list`, print the built-in lilst of supported `--organism` options
 
 **Currently supported organisms and how they should be called:**
 
 `Acinetobacter_baumannii` <br />
+`Bordetella_pertussis` <br/>
 `Burkholderia_cepacia`<br />
 `Burkholderia_pseudomallei`<br />
+`Burkholderia_mallei` <br/>
 `Citrobacter_freundii`<br />
 `Corynebacterium_diphtheriae`<br />
 `Campylobacter`<br />
@@ -281,7 +299,7 @@ ________________________________________________________________________________
                                             
 `-i`, `--input`, input file in CSV format <br />
 `-M`, `--metadata`, file containing gene names and descriptions <br />
-`-o`, `--output_boot`, output bootstrap file <br />
+`-o`, `--output-boot`, output bootstrap file <br />
 `-T`, `--threads`, number of cores to dedicate for parallel processing <br />
 `-n`, `--bootstraps`, how many bootstraps to run (suggested minimum of 300-500) <br />
 `-r`, `--resamples`, how many data resamples you want to use (suggested minimum of 100) <br />
