@@ -75,10 +75,13 @@ ________________________________________________________________________________
 3. `source activate regain`
 4. `conda install -y bioconda::regain-cli`
 
+After installation, install AMRFinderPlus database <br/>
+5. `amrfinder -u`
+
 One-liner:
 `conda create -y -n regain -c bioconda python=3.10 r-base=4.4`
 
-Test installation: <br/>
+Test ReGAIN installation: <br/>
 `regain -h`
 `regain --module-health`
 
