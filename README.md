@@ -67,6 +67,11 @@ ________________________________________________________________________________
 
 # <ins>**ReGAIN Installation**</ins> 
 
+### **macOS Note (v1.7.1):** <br/>
+Due to current limitations in the Conda R / gRain stack on macOS, the Bioconda recipe for ReGAIN v1.7.1 may fail to solve dependencies
+on osx-64. Until this is resolved upstream, we recommend [this workaround](https://github.com/ERBringHorvath/regain_CLI/issues/3) 
+using a minimal Python+R Conda environment and installing ReGAIN from source.
+
 ## Bioconda Installation
 
 1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
