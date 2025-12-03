@@ -70,9 +70,9 @@ ________________________________________________________________________________
 ## Bioconda Installation
 
 1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
-2. `conda create -y -n regain python=3.10 r-base=4.4`
-3. `source activate regain`
-4. `conda install -y bioconda::regain-cli`
+2. `conda create -y -n regain-conda python=3.10 r-base=4.4`
+3. `source activate regain-conda`
+4. `conda install -y -c conda-forge -c bioconda regain-cli`
 5. Install AMRFinderPlus database: `amrfinder -u`
 
 Test ReGAIN installation: <br/>
