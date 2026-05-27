@@ -383,7 +383,7 @@ NOTE: value passed to `--output-file` will be used as the basename for all summa
 `profile_members.csv` is also generated. This is a simplifed version of `profile_groups.csv`
 _________________________________________________________________________________
 
-# **Collapes Features**
+# **Collapse Features**
 
 ## Module 1.3 `regain collapse-features`
 
