@@ -261,11 +261,20 @@ Additional options (AMRFinderPlus-specific parameters): <br/>
 
 **Module 1 example usage:**
 
-Organism specific: <br/>
-`regain AMR -d path/to/FASTA/files -O Pseudomonas_aruginosa -T 8 -o path/to/output/directory`
+Organism specific:
+```
+regain AMR \
+-d path/to/FASTA/files \
+-O Pseudomonas_aruginosa \
+-T 8 -o path/to/output/directory
+```
 
-Organism non-specific: <br/>
-`regain AMR -d path/to/FASTA/files -T 8 -o path/to/output/directory`
+Organism non-specific:
+```
+regain AMR \
+-d path/to/FASTA/files \
+-T 8 -o path/to/output/directory
+```
 
 **Output files:**
 
@@ -291,8 +300,12 @@ Examples of special characters: '"/,().[]
 
 NOTE: Discrete Bayesian network anlyses requires all variables to exist in at least two states. For ReGAIN, these two states are 'present' and 'absent'. Ubiquitously occurring genes will break the analysis. 
 Best practice is for *N* genomes, `--max` should MINIMALLY be defined as *N* - 1. Keep in mind that trimming very low and very high abundance genes can reduce noise in the network.
-                                            
-`regain matrix -d path/to/AMRfinder/results --gene-type resistance --min 5 --max 475`
+```                                           
+regain matrix \
+-d path/to/AMRfinder/results \
+--gene-type resistance \
+--min 5 --max 475
+```
 
 **NOTE: all results are saved in the 'ReGAIN_Dataset' folder, which will be generated within the directory <br/> 
 defined by** `-d`/`--directory`
@@ -317,7 +330,7 @@ ________________________________________________________________________________
 `--id-col`, presence/absence matrix genome/sample ID column. Default is first column (header required) <br/>
 `--missing-as-zero`, fill missing matrix values with 0 after writing missing-value report
 
-NOTE: Only use `missing-as-zero` if values are truly absent. Treating empirically missing values as absent <br/>
+NOTE: Only use `--missing-as-zero` if values are truly absent. Treating empirically missing values as absent <br/>
 will affect Bayesian network structure learning results. <br/>
 NOTE: value passed to `--output-file` will be used as the basename for all summary files. 
 
@@ -446,12 +459,23 @@ regain collapse-features \
 `bnL`, Bayesian network structure learning analysis for 100 genes or greater
 
 For less than 100 genes:
-
-`regain bnS -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 500 --blacklist list.csv`
-                                            
+```
+regain bnS \
+-i matrix_filtered.csv \
+-M metadata.csv \
+-o bootstrapped_network \
+-T 8 -n 500 -r 500 \
+--blacklist list.csv
+```                                     
 For 100 or more genes:
-
-`regain bnL -i matrix_filtered.csv -M metadata.csv -o bootstrapped_network -T 8 -n 500 -r 500 --blacklist list.csv`
+```
+regain bnL \
+-i matrix_filtered.csv \
+-M metadata.csv \
+-o bootstrapped_network \
+-T 8 -n 500 -r 500 \
+--blacklist list.csv
+```
 
 **Output files:**
 
@@ -491,8 +515,13 @@ For use if `--no-viz` is passed or specific network parameters are wanted
 `--rr-metric`, relative risk edge color threshold (default: 1.0, <1: red, >=1: black)
 
 **Example usage:**
-
-`regain network -i network.rds -d matrix_filtered.csv -M metadata.csv -s Results.csv`
+```
+regain network \
+-i network.rds \
+-d matrix_filtered.csv \
+-M metadata.csv \
+-s Results.csv
+```
 
 This workflow is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed or specific parameters beyond `bnS`/`bnL` defaults are wanted.
 _________________________________________________________________________________
@@ -584,7 +613,12 @@ a custom set of gene queries, independent of ReGAIN Module 1
 `--keep-gene-names`, optional; maintains special characters in variable names. Should **not** be used if proceeding to Module 2 
 
 **ReGAIN Curate example Usage:** <br/>
-`regain curate -d /path/to/genome/files -q /path/to/query/files -T 8 --min 5 --max 475`
+```
+regain curate \
+-d /path/to/genome/files \
+-q /path/to/query/files \
+-T 8 --min 5 --max 475
+```
 
 **ReGAIN Curate output files:**
 
@@ -615,8 +649,12 @@ Nucleotide sequences are extracted to a multi-FASTA file
 `--translate`, optional; translates extracted nucleotide sequences (see NOTE below)
 
 **ReGAIN Extract example usage:**
-
-`regain extract -c /path/to/results/csv -f /path/to/genome/FASTA/files -T 8 -o sequences.fa`
+```
+regain extract \
+-c /path/to/results/csv \
+-f /path/to/genome/FASTA/files \
+-T 8 -o sequences.fa
+```
 
 NOTE: the `--translate` flag should be used with care. In the event an alignment returns an incomplete CDS, <br/>
 ReGAIN Extract will trim the sequence to the closest value divisible by 3 for codon prediction, which can result <br/>
@@ -638,9 +676,13 @@ In the event users want to supplement the `regain AMR` results with a custom set
 `--delete-duplicates`, optional; automatically delete duplicate values from dataset
 
 **ReGAIN Combine example usage:**
-
-`regain combine --matrix1 /path/to/AMR/matrix/csv --matrix2 /path/to/curate/matrix/csv` <br/>
-`--metadata1 /path/to/AMR/metadata/csv --metadata2 /path/to/curate/metadata/csv` 
+```
+regain combine \
+--matrix1 /path/to/AMR/matrix/csv \
+--matrix2 /path/to/curate/matrix/csv \
+--metadata1 /path/to/AMR/metadata/csv \
+--metadata2 /path/to/curate/metadata/csv 
+```
 
 **ReGAIN Combine output files:**
 
@@ -680,8 +722,12 @@ ________________________________________________________________________________
 `--pcoa-correction`, apply PCoA correction [auto, none, lingoes, cailliez] (default = auto)
                                        
 **Example usage:**
-
-`regain MVA -i matrix.csv -m jaccard --k 0 --pcoa-correction auto`
+```
+regain MVA \
+-i matrix.csv \
+-m jaccard \
+--k 0 --pcoa-correction auto
+```
 
 **NOTE: the MVA analysis will generate 2 files: a PNG and a PDF of the plot**
 _________________________________________________________________________________
