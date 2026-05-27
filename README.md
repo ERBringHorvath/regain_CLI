@@ -500,7 +500,7 @@ Additionally, blacklists should be used with caution; ideally, only 'imposible' 
 ## Standalone Network Visualization 
 For use if `--no-viz` is passed or specific network parameters are wanted
 
-`regain network`
+`regain network <options>`
 
 `-i`, `--input`, input RDS file generated from `bnS`/`bnL` analysis <br/>
 `-d`, `--data`, input filtered data matrix file <br/>
@@ -520,7 +520,7 @@ regain network \
 -i network.rds \
 -d matrix_filtered.csv \
 -M metadata.csv \
--s Results.csv
+-s Query_Results.csv
 ```
 
 This workflow is an integrated part of the standard `bnS`/`bnL` pipeline, but serves as a redundant measure in the event network visualization needs to be re-performed or specific parameters beyond `bnS`/`bnL` defaults are wanted.
@@ -597,7 +597,7 @@ ________________________________________________________________________________
 ReGAIN Curate is designed to allow users to generate a dataset for Bayesian network structure learning using <br/>
 a custom set of gene queries, independent of ReGAIN Module 1
 
-`regain curate`
+`regain curate <options>`
 
 `-d`, `--directory`, path to genome FASTA files <br/>
 `-q`, `--query`, path to query files containing amino acid sequences in FASTA format <br/>
@@ -637,7 +637,7 @@ ReGAIN Extract is an optional module for use with ReGAIN Curate. This module ext
 identified from `regain curate`. Offered as an additional quality control step for gene identification. <br/>
 Nucleotide sequences are extracted to a multi-FASTA file
 
-`regain extract`
+`regain extract <options>`
 
 `-c`, `--csv-path`, path to ReGAIN Curate results file, such as `filtered_results.csv` <br/>
 `-f`, `--fasta-directory`, path to genome FASTA files used in ReGAIN curate <br/>
@@ -667,7 +667,7 @@ ReGAIN Combine is an optional module for use in combination with the ReGAIN Cura
 In the event users want to supplement the `regain AMR` results with a custom set of genes queried through <br/>
 `regain curate`, `regain combine` will merge both datasets into a single dataset for use in ReGAIN statistical modules
 
-`regain combine`
+`regain combine <options>`
 
 `--matrix1`, path to ReGAIN AMR data matrix, `filtered_matrix.csv` <br/>
 `--matrix2`, path to ReGAIN Curate data matrix, `curate_matrix.csv` <br/>
@@ -702,7 +702,7 @@ ________________________________________________________________________________
 `jaccard`, `gower`, `altGower`, `morisita`, `horn`, `mountford`, `raup`, <br/>
 `binomial`, `chao`, `cao`, `chord`, `hellinger`, `aitchison`, `mahalanobis`
 
-`regain MVA`
+`regain MVA <options>`
                                            
 `-i`, `--input`, input file in CSV format <br/>
 `-m`, `--method`, options:  <br/>
@@ -738,7 +738,7 @@ ReGAIN `genome-similarity` is an optional module to assess population similarity
 
 **NOTE:** This module does not automatically trim genomes from an input population. Instead, it provides similarity results for user review to direct population adjustments, if needed. 
 
-`regain genome-similarity`
+`regain genome-similarity <options>`
 
 `-f`, `--fasta-dir`, directory of genomes in FASTA format for comparison <br/>
 `-o`, `--output-dir`, output directory for genome reports <br/>
