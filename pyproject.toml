@@ -4,21 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regain-cli"
-version = "1.8.0" 
+version = "1.8.0"
 description = "ReGAIN: Resistance Gene Association and Inference Network CLI"
 readme = "README.md"
-license = { text = "BSD-3-Clause" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "ERBringHorvath" }]
 requires-python = ">=3.10"
 dependencies = [
-  "pandas>=2.3",        
-  "biopython>=1.83",    
-  "tqdm>=4.64"
+  "pandas>=2.3",
+  "biopython>=1.83",
+  "tqdm>=4.67"
 ]
 
 [project.urls]
-Homepage = "https://github.com/youruser/regain_CLI"
-Issues = "https://github.com/youruser/regain_CLI/issues"
+Homepage = "https://github.com/ERBringHorvath/regain_CLI"
+Issues = "https://github.com/ERBringHorvath/regain_CLI/issues"
 
 [project.scripts]
 regain = "regain.cli:main"
@@ -30,6 +31,11 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# ship R scripts, shell wrappers, and demo data inside the package
 [tool.setuptools.package-data]
-regain = ["*.r", "*.sh", "demo_datasets/*"]
+regain = [
+  "*.r",
+  "*.R",
+  "*.sh",
+  "demo_datasets/*",
+  "demo_datasets/**/*"
+]
