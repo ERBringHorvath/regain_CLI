@@ -133,11 +133,10 @@ One-liner: `conda create -y -n regain -c conda-forge -c bioconda python=3.10 r-b
 6. Download ReGAIN to preferred directory (we suggest `$HOME` directory)
 * `git clone https://github.com/ERBringHorvath/regain_CLI`
 
-7. Install Python dependencies
+7. Install Python and R dependencies
 * `cd /path/to/regain_CLI`
 * `pip install .`
-
-**Note:** R dependencies should be installed automatically when running ReGAIN for the first time
+* `Rscript install_r_dependencies.R`
 
 8. Add ReGAIN to your PATH
     * File might be `.bash_profile`, `.bashrc`, `.zshrc` depending on OS and Shell
