@@ -2,11 +2,69 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 University of Utah
 
-suppressPackageStartupMessages({ library(optparse) })
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  dplyr.summarise.inform = FALSE,
+  stringsAsFactors = FALSE
+)
+
+#----- Packages -----
+
+required_pkgs <- c(
+  "optparse",
+  "dplyr",
+  "parallel",
+  "pbapply",
+  "RColorBrewer",
+  "visNetwork",
+  "igraph",
+  "reshape2",
+  "doParallel",
+  "scales",
+  "foreach",
+  "tidygraph",
+  "ggraph",
+  "ggplot2",
+  "tidyr",
+  "bnlearn",
+  "graph"
+)
+
+missing_pkgs <- required_pkgs[
+  !vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_pkgs) > 0) {
+  stop(
+    paste0(
+      "Missing required R package(s): ",
+      paste(missing_pkgs, collapse = ", "),
+      "\n\nPlease install ReGAIN dependencies before running this script.\n",
+      "Fallback system-R installation:\n",
+      " Rscript install_R_dependencies.R\n"
+    ),
+    call. = FALSE
+  )
+}
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidyr)
+  library(igraph)
+  library(visNetwork)
+  library(RColorBrewer)
+  library(tidygraph)
+  library(ggraph)
+  library(ggplot2)
+  library(scales)
+  library(bnlearn)
+  library(graph)
+  library(optparse)
+})
+
+#----- CLI -----
 
 options(stringsAsFactors = FALSE)
-options(repos = c(CRAN = "https://cloud.r-project.org"),
-        dplyr.summarise.inform = FALSE)
 
 opt_list <- list(
   make_option(c("-N","--boot"),      type="character", help="Bootstrapped network .rds (from bnS/bnL)"),
@@ -30,55 +88,6 @@ opt <- parse_args(parser)
 required <- c("boot","input","metadata","stats")
 miss <- required[ vapply(required, function(k) { v <- opt[[k]]; is.null(v) || !nzchar(trimws(as.character(v))) }, logical(1)) ]
 if (length(miss)) { print_help(parser); stop(paste("Missing required:", paste(miss, collapse=", ")), call.=FALSE) }
-
-cran_pkgs <- c("dplyr","tidyr","igraph","visNetwork","RColorBrewer","tidygraph","ggraph","ggplot2","scales")
-bioc_pkgs <- c("bnlearn","graph")
-inst <- rownames(installed.packages())
-need_cran <- setdiff(cran_pkgs, inst)
-if (length(need_cran)) install.packages(need_cran)
-need_bioc <- setdiff(bioc_pkgs, inst)
-if (length(need_bioc)) { suppressPackageStartupMessages({ if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager"); BiocManager::install(need_bioc, ask=FALSE, update=FALSE) }) }
-
-suppressPackageStartupMessages({
-  library(dplyr); library(tidyr); library(igraph); library(visNetwork); library(RColorBrewer)
-  library(tidygraph); library(ggraph); library(ggplot2); library(scales); library(bnlearn); library(graph)
-})
-
-# ---- inputs ----
-boot_path <- opt$boot
-data_path <- opt$input
-meta_path <- opt$metadata
-stats_path <- opt$stats
-thr       <- opt$threshold
-seed      <- opt$seed
-html_out  <- as.character(opt[["html-out"]]) #safer than opt$`html-out`
-pdf_out   <- as.character(opt[["pdf-out"]])
-bl_path   <- opt$blacklist
-width_mode<- tolower(as.character(opt[["width-metric"]]))
-rr_thr    <- as.numeric(opt[["rr-threshold"]])
-
-stopifnot(file.exists(boot_path), file.exists(data_path), file.exists(meta_path), file.exists(stats_path))
-
-cat("Inputs:\n")
-cat("  Boot RDS:  ", boot_path, "\n")
-cat("  Data CSV:  ", data_path, "\n")
-cat("  Metadata:  ", meta_path, "\n")
-cat("  Stats CSV: ", stats_path, "\n")
-cat("  Threshold: ", thr, "\n")
-if (!is.null(bl_path)) cat("  Blacklist: ", bl_path, "\n")
-
-# ---- load data ----cran_pkgs <- c("dplyr","tidyr","igraph","visNetwork","RColorBrewer","tidygraph","ggraph","ggplot2","scales")
-bioc_pkgs <- c("bnlearn","graph")
-inst <- rownames(installed.packages())
-need_cran <- setdiff(cran_pkgs, inst)
-if (length(need_cran)) install.packages(need_cran)
-need_bioc <- setdiff(bioc_pkgs, inst)
-if (length(need_bioc)) { suppressPackageStartupMessages({ if (!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager"); BiocManager::install(need_bioc, ask=FALSE, update=FALSE) }) }
-
-suppressPackageStartupMessages({
-  library(dplyr); library(tidyr); library(igraph); library(visNetwork); library(RColorBrewer)
-  library(tidygraph); library(ggraph); library(ggplot2); library(scales); library(bnlearn); library(graph)
-})
 
 # ---- inputs ----
 boot_path <- opt$boot

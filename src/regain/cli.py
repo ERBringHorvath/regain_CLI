@@ -193,6 +193,10 @@ def _print_module_health():
         ("curate", "run"),
         ("extract", "run"),
         ("combine", "run"),
+        ("collapse_features", "run"),
+        ("matrix_summary", "run"),
+        ("genome_similarity", "run"),
+        ("network_analysis", "run"),
     ]
 
     ok = []
@@ -255,7 +259,7 @@ def main(argv=None):
 
     subparsers = parser.add_subparsers(dest='command')
 
-    # ---- AMR (Python) ----
+    #---------------- AMR (Python) ----------------
     amr_parser = subparsers.add_parser(
     'AMR',
     help='Module 1: Resistance/Virulence gene identification via AMRFinderPlus'
@@ -267,6 +271,7 @@ def main(argv=None):
                             default='nucleotide',
                             help='Input mode: nucleotide, protein, or combined (protein + GFF annotation file)')
     amr_parser.add_argument('--gff', help='GFF for combined mode (required when --mode combined)')
+
     # AMRFinder+ pass-throughs
     amr_parser.add_argument('-O', '--organism',
                             help='Organism token for point-mutation screening and blacklisting')
@@ -300,18 +305,102 @@ def main(argv=None):
 
     set_py_handler(amr_parser, 'AMR', 'run')
 
-    # ---- matrix (Python) ----
+    #---------------- Matrix (Python) ----------------
     matrix_parser = subparsers.add_parser('matrix', help='Module 1.1: Dataset Creation...')
-    matrix_parser.add_argument('-d', '--directory', required=True, help='Input directory to CSV files to search')
-    matrix_parser.add_argument('--keep-gene-names', action='store_true', help='Replace special characters...')
-    matrix_parser.add_argument('--min', type=int, default=5, required=True, help='Minimum required gene occurrences')
-    matrix_parser.add_argument('--max', type=int, help='Maximum allowed gene occurrences')
-    matrix_parser.add_argument('--gene-type', required=True, choices=['resistance', 'virulence', 'all'],
-                               help='specify gene type: resistance, virulence, all')
-    matrix_parser.add_argument('--report-all', action='store_true', help='Return actual gene count...')
+
+    matrix_parser.add_argument(
+        '-d', '--directory', 
+        required=True, 
+        help='Input directory to CSV files to search'
+    )
+
+    matrix_parser.add_argument(
+        '-o', '--output-dir',
+        default='ReGAIN_Dataset',
+        help='Optional output directory name. Default: ReGAIN_Dataset'
+    )
+    
+    matrix_parser.add_argument(
+        '--keep-gene-names', 
+        action='store_true', 
+        help='Replace special characters...'
+    )
+
+    matrix_parser.add_argument(
+        '--min', 
+        type=int, 
+        default=5, 
+        required=True, 
+        help='Minimum required gene occurrences'
+    )
+
+    matrix_parser.add_argument(
+        '--max', 
+        type=int, 
+        help='Maximum allowed gene occurrences'
+    )
+
+    matrix_parser.add_argument(
+        '--gene-type', 
+        required=True,
+        choices=['resistance', 'virulence', 'all'],                       
+        help='specify gene type: resistance, virulence, all'
+    )
+
+    matrix_parser.add_argument(
+        '--report-all', 
+        action='store_true', 
+        help='Return actual gene count...'
+    )
+
+    matrix_parser.add_argument(
+        '--expected-extension-string',
+        default='amrfinder.csv',
+        help='Expected filename ending for AMRFinder output files (default: .amrfinder.csv (regain AMR default out))'
+    )
+
+    matrix_parser.add_argument(
+        '--subtype-col',
+        default=None,
+        help='Column name for AMRFinder subtype annotations. Default: "Element subtype" or "Subtype"'
+    )
+
+    matrix_parser.add_argument(
+        '--gene-col',
+        default=None,
+        help='Column name for gene/element symbols. Default: "Element symbol" or "Gene symbol"'
+    )
+
+    matrix_parser.add_argument(
+        '--class-col',
+        default='Class',
+        help='Column name for AMRFinder Class annotations. Default: Class'
+    )
+
+    matrix_parser.add_argument(
+        '--subclass-col',
+        default='Subclass',
+        help='Column name for AMRFinder Subclass annotations. Default: Subclass'
+    )
+
+    matrix_parser.add_argument(
+        '--verbose-gene-report',
+        action='store_true',
+        help=(
+            'Write combined_AMR_results_unfiltered.csv as a verbose per-source report: '
+            'Retain duplicate gene rows and append a source-file column. '
+            'Default behavior drops duplicate gene rows to create a simple gene dictionary'
+        )
+    )
+
+    matrix_parser.add_argument(
+        '--force-overwrite',
+        action='store_true',
+        help='Delete an existing output directory before writing new results'
+    )
     set_py_handler(matrix_parser, 'matrix', 'run')
 
-    # ---- bnS (shell/R) ----
+    #---------------- bnS (shell/R) ----------------
     bnS_parser = subparsers.add_parser('bnS', help='Module 2: Bayesian Network (< 100 genes)')
     bnS_parser.add_argument('-i', '--input', required=True, help='Input data matrix in CSV format')
     bnS_parser.add_argument('-M', '--metadata', required=True, help='Input metadata file with genes to query')
@@ -324,7 +413,7 @@ def main(argv=None):
     bnS_parser.add_argument('--no-viz', dest='no_viz', action='store_true', help='Skip HTML/PDF visualization')
     bnS_parser.set_defaults(func=run_bnS)
 
-    # ---- bnL (shell/R) ----
+    #---------------- bnL (shell/R) ----------------
     bnL_parser = subparsers.add_parser('bnL', help='Module 2: Bayesian Network (≥ 100 genes)')
     bnL_parser.add_argument('-i', '--input', required=True, help='Input data matrix in CSV format')
     bnL_parser.add_argument('-M', '--metadata', required=True, help='Input metadata file with genes to query')
@@ -339,7 +428,7 @@ def main(argv=None):
                             help='Monte Carlo samples for cpquery (default: 10000)')
     bnL_parser.set_defaults(func=run_bnL)
 
-    # ---- network (shell/R) ----
+    #---------------- Network (shell/R) ----------------
     network_parser = subparsers.add_parser('network', help='Visualize Bayesian network (HTML + PDF)')
     network_parser.add_argument('-N', '--network', required=True, help='Bootstrapped network .rds')
     network_parser.add_argument('-i', '--input', required=True, help='Input data matrix in CSV format')
@@ -355,7 +444,7 @@ def main(argv=None):
     network_parser.add_argument('--rr-threshold', type=float, default=1.0, help='RR color threshold (default 1.0)')
     network_parser.set_defaults(func=run_network)
 
-    # ---- MVA (shell/R) ----
+    #---------------- MVA (shell/R) ----------------
     mva_parser = subparsers.add_parser('MVA', help='Multivariate analysis (PCoA + k-means + ellipses)')
     mva_parser.add_argument('-i','--input', required=True, help='Input data file in CSV format')
     mva_parser.add_argument('-m','--method', default='euclidean',
@@ -376,7 +465,7 @@ def main(argv=None):
     mva_parser.add_argument('--pcoa-correction', choices=['auto','none','lingoes','cailliez'], default='auto', help="Apply PCoA correction (default = auto)")
     mva_parser.set_defaults(func=run_mva)
 
-    # ---- curate/extract/combine (Python) ----
+    #---------------- Curate (Python) ----------------
     curate_parser = subparsers.add_parser('curate', help='ReGAIN Curate: Create a curated dataset...')
     curate_parser.add_argument('-f', '--fasta-directory', required=True, help='Input directory to genomes in FASTA')
     curate_parser.add_argument('-q', '--query', required=True, help='Input directory to gene FASTA queries')
@@ -392,6 +481,8 @@ def main(argv=None):
     curate_parser.add_argument('--max', type=int, required=True, help='Maximum allowed gene occurrence')
     set_py_handler(curate_parser, 'curate', 'run')
 
+    #---------------- Extract (Python) ----------------
+
     parser_extract = subparsers.add_parser('extract', help="ReGAIN Curate: extract sequences...")
     parser_extract.add_argument('-c', '--csv-path', required=True, help="Path to BLAST results files")
     parser_extract.add_argument('-f', '--fasta-directory', required=True, help="Path to reference FASTA assemblies")
@@ -403,6 +494,8 @@ def main(argv=None):
     parser_extract.add_argument('--translate', action='store_true', help='Translate using standard code.')
     set_py_handler(parser_extract, 'extract', 'run')
 
+    #---------------- Combine (Python) ----------------
+
     parser_combine = subparsers.add_parser('combine', help='Combine datasets from ReGAIN AMR and ReGAIN Curate')
     parser_combine.add_argument('--matrix1', required=True, help='Path to ReGAIN AMR data matrix file')
     parser_combine.add_argument('--matrix2', required=True, help='Path to ReGAIN Curate data matrix file')
@@ -410,6 +503,248 @@ def main(argv=None):
     parser_combine.add_argument('--metadata2', required=True, help='Path to ReGAIN Curate metadata file')
     parser_combine.add_argument('--delete-duplicates', action='store_true', help='Delete duplicate values')
     set_py_handler(parser_combine, 'combine', 'run')
+
+    #---------------- Collapse (Python) ----------------
+
+    collapse_parser = subparsers.add_parser(
+        'collapse-features',
+        help="Collapse presence/absence matrix features using a user-provided Gene-to-bin mapping file"
+    )
+
+    collapse_parser.add_argument(
+        '-i', '--input',
+        required=True,
+        help='Input presence/absence matrix in CSV or TSV format'
+    )
+
+    collapse_parser.add_argument(
+        '-M', '--metadata',
+        required=True,
+        help='Metadata/mapping file containing Gene and bin columns'
+    )
+
+    collapse_parser.add_argument(
+        '-o', '--output-file',
+        required=True,
+        help='Output collapsed presence/absence matrix'
+    )
+
+    collapse_parser.add_argument(
+        '--id-col',
+        default=None,
+        help='Presence/absence matrix genome/sample ID column. Default: first column'
+    )
+
+    collapse_parser.add_argument(
+        '--gene-col',
+        default='Gene',
+        help='Column in metadata containing original feature name (generated from `regain matrix`). Default: Gene'
+    )
+
+    collapse_parser.add_argument(
+        '--bin-col',
+        default='bin',
+        help='Column in metadata containing collapsed feature names. Default: bin'
+    )
+
+    collapse_parser.add_argument(
+        '--drop-unmapped',
+        action='store_true',
+        help='Drop matrix features not present in metadata. Default: keep unmapped features unchanged'
+    )
+
+    collapse_parser.add_argument(
+        '--missing-as-zero',
+        action='store_true',
+        help='Fill missing matrix values with 0 after writing missing-value report'
+    )
+    set_py_handler(collapse_parser, "collapse_features", 'run')
+
+    #---------------- Matrix Summary (Python) ----------------
+
+    summary_parser = subparsers.add_parser(
+        'matrix-summary',
+        help='Summarize and validate a ReGAIN presence/absence matrix'
+    )
+
+    summary_parser.add_argument(
+        '-i', '--input',
+        required=True,
+        help='Input presence/absence matrix'
+    )
+
+    summary_parser.add_argument(
+        '-o', '--output-file',
+        required=True,
+        help='Output matrix summary CSV file'
+    )
+
+    summary_parser.add_argument(
+        '--id-col',
+        default=None,
+        help='Presence/absence matrix genome/sample ID column. Default: first column (header required)'
+    )
+
+    summary_parser.add_argument(
+        '--missing-as-zero',
+        action='store_true',
+        help=(
+            "Fill missing matrix values with 0 after writing missing-value report.\n"
+            "NOTE: Only use if values truly are 'absent'. Treating empirically missing values as absent will "
+            "affect Bayesian network structure learning results")
+    )
+    set_py_handler(summary_parser, 'matrix_summary', 'run')
+
+    #---------------- Genome Similarity (Python) ----------------
+    genome_similarity_parser = subparsers.add_parser(
+        'genome-similarity',
+        help='Estimate genome similarity and report potential clonal groups'
+    )
+
+    genome_similarity_parser.add_argument(
+        '-f', '--fasta-dir',
+        required=True,
+        help='Directory containing genome FASTA files'
+    )
+
+    genome_similarity_parser.add_argument(
+        '-o', '--output-dir',
+        required=True,
+        help='Output directory for genome similarity reports'
+    )
+
+    genome_similarity_parser.add_argument(
+        '--method',
+        choices=['fastani', 'mash'],
+        default='fastani',
+        help='Genome similarity method. Default: fastani'
+    )
+
+    genome_similarity_parser.add_argument(
+        '--threshold',
+        nargs='+',
+        type=float,
+        default=None,
+        help=(
+            'One or more space-separated thresholds. For FastANI, thresholds are ANI percent values '
+            'such as 99.9 99.5 99.0. For Mash, thresholds are Mash distance values '
+            'such as 0.001 0.005 0.01. Defaults are method-specific (values displayed here)'
+        )
+    )
+
+    genome_similarity_parser.add_argument(
+        '--genome-list',
+        default=None,
+        help=(
+            'Optional file containing one genome filename or relative path per row. '
+            'Entries are resolved relative to --fasta-dir'
+        )
+    )
+
+    genome_similarity_parser.add_argument(
+        '-e', '--extensions',
+        nargs='+',
+        default=['.fna', '.fa', '.ffn', '.fas', '.fasta'],
+        help='FASTA extensions (space-separated) to include. Default: .fna, .fa, .fas, .ffn, .fas, .fasta'
+    )
+
+    genome_similarity_parser.add_argument(
+        '--recursive',
+        action='store_true',
+        help='Search --fasta-dir recursively for FASTA files (one or more levels deep; use with caution)'
+    )
+
+    genome_similarity_parser.add_argument(
+        '-T', '--threads',
+        type=int,
+        default=4,
+        help='Threads to pass to selected method. Default: 4'
+    )
+
+    genome_similarity_parser.add_argument(
+        '--sketch-size',
+        type=int,
+        default=10000,
+        help='Mash sketch size. Used only with --method mash. Default: 10000'
+    )
+
+    genome_similarity_parser.add_argument(
+        '--kmer-size',
+        type=int,
+        default=21,
+        help='Mash k-mer size. Used only with --method mash. Default: 21'
+    )
+    set_py_handler(genome_similarity_parser, 'genome_similarity', 'run')
+
+    #---------------- Network Analysis (Python) ----------------
+
+    network_analysis_parser = subparsers.add_parser(
+        'network-analysis',
+        help='Compare two ReGAIN bnS/bnL results tables'
+    )
+
+    network_analysis_parser.add_argument(
+        '--network1',
+        required=True,
+        help='Baseline ReGAIN bnS/bnL probability results table (Query_Results.csv)'
+    )
+
+    network_analysis_parser.add_argument(
+        '--network2',
+        required=True,
+        help='Comparison ReGAIN bnS/bnL results table (Query_Results.csv)'
+    )
+
+    network_analysis_parser.add_argument(
+        '-o', '--output-dir',
+        required=True,
+        help='Output directory for network comparison results'
+    )
+
+    network_analysis_parser.add_argument(
+        '--gene-a-col',
+        default='Gene_1',
+        help='Gene_1 column name. Default: Gene_1'
+    )
+
+    network_analysis_parser.add_argument(
+        '--gene-b-col',
+        default='Gene_2',
+        help='Gene_2 column name. Default: Gene_2'
+    )
+
+    network_analysis_parser.add_argument(
+        '--cpr-mean-col',
+        default='Conditional_Probability_Mean',
+        help='Conditional probability mean column name. Default: Conditional_Probability_Mean'
+    )
+
+    network_analysis_parser.add_argument(
+        '--rr-mean-col',
+        default='Relative_Risk_Mean',
+        help='Relative risk mean column name. Default: Relative_Risk_Mean'
+    )
+
+    network_analysis_parser.add_argument(
+        '--ard-mean-col',
+        default='Absolute_Risk_Mean',
+        help='Absolute risk difference column name. Default: Absolute_Risk_Mean'
+    )
+
+    network_analysis_parser.add_argument(
+        '--status-metric',
+        choices=['cpr', 'rr', 'ard'],
+        default='ard',
+        help='Metric used to classify retained/weakened/strengthened. Default: ard'
+    )
+
+    network_analysis_parser.add_argument(
+        '--delta-threshold',
+        type=float,
+        default=0.1,
+        help='Minimum mean delta magnitude used to classify weakened/strengthened. Default: 0.1'
+    )
+    set_py_handler(network_analysis_parser, 'network_analysis', 'run')
 
     # ---- parse & early exit for health ----
     args = parser.parse_args(argv)

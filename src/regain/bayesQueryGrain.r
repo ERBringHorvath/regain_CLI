@@ -2,16 +2,78 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 University of Utah
 
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  dplyr.summarise.inform = FALSE,
+  stringsAsFactors = FALSE
+)
+
+#----- Packages -----
+
+required_pkgs <- c(
+  "optparse",
+  "dplyr",
+  "parallel",
+  "pbapply",
+  "RColorBrewer",
+  "visNetwork",
+  "igraph",
+  "reshape2",
+  "doParallel",
+  "scales",
+  "foreach",
+  "tidygraph",
+  "ggraph",
+  "ggplot2",
+  "tidyr",
+  "bnlearn",
+  "gRain",
+  "graph"
+)
+
+missing_pkgs <- required_pkgs[
+  !vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_pkgs) > 0) {
+  stop(
+    paste0(
+      "Missing required R package(s): ",
+      paste(missing_pkgs, collapse = ", "),
+      "\n\nPlease install ReGAIN dependencies before running this script.\n",
+      "Fallback system-R installation:\n",
+      " Rscript install_R_dependencies.R\n"
+    ),
+    call. = FALSE
+  )
+}
+
 suppressPackageStartupMessages({
   library(optparse)
+  library(optparse)
+  library(dplyr)
+  library(parallel)
+  library(pbapply)
+  library(RColorBrewer)
+  library(visNetwork)
+  library(igraph)
+  library(reshape2)
+  library(doParallel)
+  library(scales)
+  library(foreach)
+  library(tidygraph)
+  library(ggraph)
+  library(ggplot2)
+  library(tidyr)
+  library(bnlearn)
+  library(gRain)
+  library(graph)
 })
 
-options(repos = c(CRAN = "https://cloud.r-project.org"),
-        dplyr.summarise.inform = FALSE)
+#----- CLI -----
 
 options(stringsAsFactors = FALSE)
 
-## ---- CLI ----
 opt_list <- list(
   make_option(c("-i","--input"), type="character", help="Input matrix CSV (row.names in col 1)"),
   make_option(c("-M","--metadata"), type="character", help="Metadata CSV (two columns: gene, class/label)"),
@@ -39,24 +101,24 @@ if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
 }
 
-pkgs <- c(
-  'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
-  'igraph','reshape2','doParallel','scales',
-  'tidygraph','ggraph','ggplot2','tidyr'
-)
-miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-if (length(miss) > 0) install.packages(miss)
-
-bioc_pkgs <- c('bnlearn','gRain','progressr','graph')
-miss_bioc <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
-if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update = FALSE)
-
-suppressPackageStartupMessages({
-  library(dplyr); library(parallel); library(doParallel); library(pbapply)
-  library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
-  library(bnlearn); library(gRain); library(graph); library(scales); library(foreach); library(tidygraph)
-  library(ggraph); library(ggplot2); library(tidyr)
-})
+# pkgs <- c(
+#   'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
+#   'igraph','reshape2','doParallel','scales',
+#   'tidygraph','ggraph','ggplot2','tidyr'
+# )
+# miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+# if (length(miss) > 0) install.packages(miss)
+# 
+# bioc_pkgs <- c('bnlearn','gRain','progressr','graph')
+# miss_bioc <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
+# if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update = FALSE)
+# 
+# suppressPackageStartupMessages({
+#   library(dplyr); library(parallel); library(doParallel); library(pbapply)
+#   library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
+#   library(bnlearn); library(gRain); library(graph); library(scales); library(foreach); library(tidygraph)
+#   library(ggraph); library(ggplot2); library(tidyr)
+# })
 
 ## ---- inputs & echo ----
 input_file  <- opt$input
@@ -152,7 +214,7 @@ boosts <- function(d_fact, Nlists, avg_boot) {
 boosts_list <- boosts(d_fact, Nlists, avg_boot)
 
 message(sprintf("\n[INFO] Precompiling %d gRain networks ...", length(boosts_list)))
-grain_list <- lapply(boosts_list, function(bn) compile(as.grain(bn), propagate = TRUE))
+grain_list <- lapply(boosts_list, function(bn) bnlearn::as.grain(bn))
 
 N <- length(valid_genes)
 epsilon = 1e-9

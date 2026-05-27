@@ -2,16 +2,75 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 University of Utah
 
-options(stringsAsFactors = FALSE)
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  dplyr.summarise.inform = FALSE,
+  stringsAsFactors = FALSE
+)
+
+#----- Packages -----
+
+required_pkgs <- c(
+  "optparse",
+  "dplyr",
+  "parallel",
+  "pbapply",
+  "RColorBrewer",
+  "visNetwork",
+  "igraph",
+  "reshape2",
+  "doParallel",
+  "scales",
+  "foreach",
+  "tidygraph",
+  "ggraph",
+  "ggplot2",
+  "tidyr",
+  "bnlearn",
+  "graph"
+)
+
+missing_pkgs <- required_pkgs[
+  !vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_pkgs) > 0) {
+  stop(
+    paste0(
+      "Missing required R package(s): ",
+      paste(missing_pkgs, collapse = ", "),
+      "\n\nPlease install ReGAIN dependencies before running this script.\n",
+      "Fallback system-R installation:\n",
+      " Rscript install_R_dependencies.R\n"
+    ),
+    call. = FALSE
+  )
+}
 
 suppressPackageStartupMessages({
   library(optparse)
+  library(dplyr)
+  library(parallel)
+  library(doParallel)
+  library(pbapply)
+  library(RColorBrewer)
+  library(visNetwork)
+  library(igraph)
+  library(reshape2)
+  library(bnlearn)
+  library(graph)
+  library(scales)
+  library(foreach)
+  library(tidygraph)
+  library(ggraph)
+  library(ggplot2)
+  library(tidyr)
 })
 
-options(repos = c(CRAN = "https://cloud.r-project.org"),
-        dplyr.summarise.inform = FALSE)
+#----- CLI -----
 
-## ---- CLI ----
+options(stringsAsFactors = FALSE)
+
 opt_list <- list(
   make_option(c("-i","--input"), type="character", help="Input matrix CSV (row.names in col 1)"),
   make_option(c("-M","--metadata"), type="character", help="Metadata CSV (two columns: gene, class/label)"),
@@ -41,25 +100,6 @@ missing <- required[!nzchar(trimws(sapply(required, function(k) as.character(opt
 if (length(missing)) {
   print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE)
 }
-
-pkgs <- c(
-  'dplyr','parallel','pbapply','BiocManager','RColorBrewer','visNetwork',
-  'igraph','reshape2','doParallel','scales',
-  'tidygraph','ggraph','ggplot2','tidyr'   # for PDF plotting
-)
-miss <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-if (length(miss) > 0) install.packages(miss)
-
-bioc_pkgs <- c('bnlearn','graph','progressr')  # gRain not required for cpquery
-miss_bioc <- bioc_pkgs[!(bioc_pkgs %in% installed.packages()[,"Package"])]
-if (length(miss_bioc) > 0) BiocManager::install(miss_bioc, ask = FALSE, update = FALSE)
-
-suppressPackageStartupMessages({
-  library(dplyr); library(parallel); library(doParallel); library(pbapply)
-  library(RColorBrewer); library(visNetwork); library(igraph); library(reshape2)
-  library(bnlearn); library(graph); library(scales); library(foreach)
-  library(tidygraph); library(ggraph); library(ggplot2); library(tidyr)
-})
 
 input_file    <- opt$input
 metadata_file <- opt$metadata
@@ -271,7 +311,110 @@ stats <- full_join(probs_stats, risk_stats, by = c("Gene_1","Gene_2")) %>%
   left_join(abs_stats, by = c("Gene_1","Gene_2")) %>%
   na.omit()
 
+#---------------------------------------------------------------------------
+# Relative Risk review, cap, and proportional adjustment to associated stats
+#---------------------------------------------------------------------------
+
+RR_CAP <- 4000
+
+rr_cap_hits <- stats %>%
+  filter(Relative_Risk_Mean > RR_CAP) %>%
+  select(
+    Gene_1,
+    Gene_2,
+    Relative_Risk_Mean,
+    Relative_Risk_CI_low,
+    Relative_Risk_CI_high,
+    Relative_Risk_SD
+  )
+
+stats <- stats %>%
+  mutate(
+    Relative_Risk_Mean_raw = Relative_Risk_Mean,
+    Relative_Risk_CI_low_raw = Relative_Risk_CI_low,
+    Relative_Risk_CI_high_raw = Relative_Risk_CI_high,
+    Relative_Risk_SD_raw = Relative_Risk_SD,
+    
+    notes = NA_character_,
+    
+    RR_reduction_factor = if_else(
+      Relative_Risk_Mean > RR_CAP,
+      Relative_Risk_Mean / RR_CAP,
+      1
+    ),
+    
+    Relative_Risk_CI_high = if_else(
+      Relative_Risk_Mean > RR_CAP,
+      Relative_Risk_CI_high / RR_reduction_factor,
+      Relative_Risk_CI_high
+    ),
+    
+    Relative_Risk_CI_low = if_else(
+      Relative_Risk_Mean > RR_CAP,
+      Relative_Risk_CI_low / RR_reduction_factor,
+      Relative_Risk_CI_low
+    ),
+    
+    Relative_Risk_SD = if_else(
+      Relative_Risk_Mean > RR_CAP,
+      Relative_Risk_SD / RR_reduction_factor,
+      Relative_Risk_SD
+    ),
+    
+    Relative_Risk_Mean = if_else(
+      Relative_Risk_Mean > RR_CAP,
+      RR_CAP,
+      Relative_Risk_Mean
+    ),
+    
+    notes = if_else(
+      RR_reduction_factor > 1,
+      "Relative risk reduced to cap; associated CI and SD values proportionally adjusted",
+      notes
+    )
+  ) %>%
+  select(-RR_reduction_factor)
+
+if (nrow(rr_cap_hits) > 0) {
+  red <- "\033[91m"
+  reset <- "\033[0m"
+  
+  message(
+    red,
+    "\nWARNING: Relative risk cap applied to ",
+    nrow(rr_cap_hits),
+    " gene pair(s). Cap = ",
+    RR_CAP,
+    reset
+  )
+  
+  for (i in seq_len(nrow(rr_cap_hits))) {
+    message(
+      red,
+      "  - ",
+      rr_cap_hits$Gene_1[i],
+      " -> ",
+      rr_cap_hits$Gene_2[i],
+      " | raw RR = ",
+      signif(rr_cap_hits$Relative_Risk_Mean[i], 6),
+      reset
+    )
+  }
+  
+  message(
+    red,
+    "Adjusted values were written to the final CSV; raw RR/CI/SD values were retained in *_raw columns.\n",
+    reset
+  )
+}
+
+#---------------------------------------------------------------------------
+# End of adjustment block
+#---------------------------------------------------------------------------
+
 write.csv(stats, "Query_Results.csv", row.names = FALSE)
+
+#---------------------------------------------------------------------------
 
 ## ---- BDPS / Fold Change (same as bnS; no baseline here) ----
 calculate_ratio <- function(stats, gene1, gene2) {

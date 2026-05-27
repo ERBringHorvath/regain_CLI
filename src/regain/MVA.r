@@ -2,13 +2,63 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 University of Utah
 
-suppressPackageStartupMessages({ library(optparse) })
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  dplyr.summarise.inform = FALSE,
+  stringsAsFactors = FALSE
+)
+
+#----- Packages -----
+
+required_pkgs <- c(
+  "optparse",
+  "dplyr",
+  "tibble",
+  "vegan",
+  "ggplot2",
+  "ggrepel",
+  "tidyr",
+  "ellipse",
+  "ape",
+  "scales",
+  "cluster"
+)
+
+missing_pkgs <- required_pkgs[
+  !vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_pkgs) > 0) {
+  stop(
+    paste0(
+      "Missing required R package(s): ",
+      paste(missing_pkgs, collapse = ", "),
+      "\n\nPlease install ReGAIN dependencies before running this script.\n",
+      "Fallback system-R installation:\n",
+      " Rscript install_R_dependencies.R\n"
+    ),
+    call. = FALSE
+  )
+}
+
+suppressPackageStartupMessages({
+  library(optparse)
+  library(dplyr)
+  library(tibble)
+  library(vegan)
+  library(ggplot2)
+  library(ggrepel)
+  library(tidyr)
+  library(ellipse)
+  library(ape)
+  library(scales)
+  library(cluster)
+})
+
+#----- CLI -----
 
 options(stringsAsFactors = FALSE)
-options(repos = c(CRAN = "https://cloud.r-project.org"),
-        dplyr.summarise.inform = FALSE)
 
-# ---------- CLI ----------
 opt_list <- list(
   make_option(c("-i","--input"), type="character", help="Input matrix CSV (first column = feature/gene names)"),
   make_option(c("-m","--method"), type="character", default="euclidean",
@@ -39,18 +89,6 @@ no_ellipses <- isTRUE(opt[["no-ellipses"]]) || isTRUE(opt$no_ellipses)
 req <- c("input")
 missing <- req[ vapply(req, function(k){ v <- opt[[k]]; is.null(v) || !nzchar(trimws(as.character(v))) }, logical(1)) ]
 if (length(missing)) { print_help(parser); stop(paste("Missing required:", paste(missing, collapse=", ")), call.=FALSE) }
-
-# ---------- packages ----------
-cran_pkgs <- c("dplyr","tibble","vegan","ggplot2","ggrepel","tidyr","ellipse","ape","scales","cluster")
-need <- setdiff(cran_pkgs, rownames(installed.packages()))
-if (length(need)) install.packages(need)
-# For CLR transform
-if (!requireNamespace("compositions", quietly = TRUE)) install.packages("compositions")
-
-suppressPackageStartupMessages({
-  library(dplyr); library(tibble); library(vegan); library(ggplot2); library(ggrepel)
-  library(tidyr); library(ellipse); library(ape); library(scales); library(cluster)
-})
 
 set.seed(opt$seed)
 
