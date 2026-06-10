@@ -778,7 +778,7 @@ ________________________________________________________________________________
 **ReGAIN** <br/>
 Bring Horvath E, Stein M, Mulvey MA, Hernandez EJ, Winter JM.
 ReGAIN: A Bioinformatics Pipeline for Assessing Probabilistic Co-Occurrence Between Resistance Genes in Bacterial Pathogens.
-*bioRxiv* 2024.02.26.582197; doi: https://doi.org/10.1101/2024.02.26.582197
+*bioRxiv* 2024.02.26.582197; doi: 10.1101/2024.02.26.582197
 
 **AMRFinder** <br/>
 Feldgarden M, Brover V, Haft DH, Prasad AB, Slotta DJ, Tolstoy I, Tyson GH, Zhao S, Hsu CH, McDermott PF, Tadesse DA, Morales C, Simmons M, Tillman G, Wasilenko J, Folster JP, Klimke W. Validating the AMRFinder Tool and Resistance Gene Database by Using Antimicrobial Resistance Genotype-Phenotype Correlations in a Collection of Isolates.
