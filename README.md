@@ -82,7 +82,7 @@ If not done already, download [miniforge](https://github.com/conda-forge/minifor
 1. `conda create -y -n regain-cli`
 2. `source activate regain-conda`
 
-Conda installation can be picky; the following command string has been tested on macOS and Linux and is the recommended install method
+* Conda installation can be picky; the following command string has been tested on macOS and Linux and is the recommended install method:
 
 3. `conda install -y -c conda-forge -c bioconda --strict-channel-priority regain-cli=1.8.0`
 4. Install AMRFinderPlus database: `amrfinder -u`
