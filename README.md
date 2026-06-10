@@ -116,7 +116,7 @@ For `regain --module-health`:
 ## Standalone Installation
 ### Install ReGAIN Dependencies
 
-For the most up-to-date ReGAIN releases, we suggest cloning from source
+For the most up-to-date ReGAIN releases, you can clone from source
 
 Create Conda environment and install [NCBI AMRFinderPlus](https://github.com/ncbi/amr/wiki/Install-with-bioconda), BLAST+, FastANI, and Mash
 1. `conda create -n regain python=3.10 r-base=4.4`
@@ -207,7 +207,9 @@ If specific network visualization parameters are desired, see [Module 2](#standa
 
 ## Module 1.0 `regain AMR`
 
-`-f`, `--fasta-directory`, path to directory containing genome FASTA files to analyze <br/>
+|Flag|Description|
+|---|---|
+|`-f`, `--fasta-directory`,| path to directory containing genome FASTA files to analyze <br/>|
 `--mode`, input FASTA file format (nucleotide, protein, combined (required protein FASTA + GFF file); default = nucleotide) <br/>
 `-O`, `--organism`, specify organism for AMRFinderPlus pipeline <br/>
 `-o`, `--output-dir`, output directory path <br/>
