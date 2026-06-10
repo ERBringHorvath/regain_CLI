@@ -776,25 +776,25 @@ ________________________________________________________________________________
 # Citations
 
 **ReGAIN** <br/>
-Bring Horvath E, Stein M, Mulvey MA, Hernandez EJ, Winter JM. <br/>
-ReGAIN: A Bioinformatics Pipeline for Assessing Probabilistic Co-Occurrence Between Resistance Genes in Bacterial Pathogens. <br/>
+Bring Horvath E, Stein M, Mulvey MA, Hernandez EJ, Winter JM.
+ReGAIN: A Bioinformatics Pipeline for Assessing Probabilistic Co-Occurrence Between Resistance Genes in Bacterial Pathogens.
 *bioRxiv* 2024.02.26.582197; doi: https://doi.org/10.1101/2024.02.26.582197
 
 **AMRFinder** <br/>
-Feldgarden M, Brover V, Haft DH, Prasad AB, Slotta DJ, Tolstoy I, Tyson GH, Zhao S, Hsu CH, McDermott PF, Tadesse DA, Morales C, Simmons M, Tillman G, Wasilenko J, Folster JP, Klimke W. <br/>Validating the AMRFinder Tool and Resistance Gene Database by Using Antimicrobial Resistance Genotype-Phenotype Correlations in a Collection of Isolates. <br/>
+Feldgarden M, Brover V, Haft DH, Prasad AB, Slotta DJ, Tolstoy I, Tyson GH, Zhao S, Hsu CH, McDermott PF, Tadesse DA, Morales C, Simmons M, Tillman G, Wasilenko J, Folster JP, Klimke W. Validating the AMRFinder Tool and Resistance Gene Database by Using Antimicrobial Resistance Genotype-Phenotype Correlations in a Collection of Isolates.
 Antimicrob Agents Chemother. 2019 Oct 22;63(11):e00483-19. doi: 10.1128/AAC.00483-19
 
 **AMRFinderPlus** <br/>
-Feldgarden M, Brover V, Gonzalez-Escalona N, Frye JG, Haendiges J, Haft DH, Hoffmann M, Pettengill JB, Prasad AB, Tillman GE, Tyson GH, Klimke W. <br/>
-AMRFinderPlus and the Reference Gene Catalog facilitate examination of the genomic links among antimicrobial resistance, stress response, and virulence. <br/>
+Feldgarden M, Brover V, Gonzalez-Escalona N, Frye JG, Haendiges J, Haft DH, Hoffmann M, Pettengill JB, Prasad AB, Tillman GE, Tyson GH, Klimke W.
+AMRFinderPlus and the Reference Gene Catalog facilitate examination of the genomic links among antimicrobial resistance, stress response, and virulence.
 Sci Rep. 2021 Jun 16;11(1):12728. doi: 10.1038/s41598-021-91456-0
 
 **FastANI** <br/>
-Jain C, Rodriguez-R LM, Phillippy AM, Konstantinidis KT, Aluru S. <br/>
-High throughput ANI analysis of 90K prokaryotic genomes reveals clear species boundaries. <br/>
+Jain C, Rodriguez-R LM, Phillippy AM, Konstantinidis KT, Aluru S.
+High throughput ANI analysis of 90K prokaryotic genomes reveals clear species boundaries.
 Nat Commun. 2018;9(1):5114. doi:10.1038/s41467-018-07641-9
 
 **Mash** <br/>
-Ondov BD, Treangen TJ, Melsted P, Mallonee AB, Bergman NH, Koren S, Phillippy AM. <br/>
-Mash: fast genome and metagenome distance estimation using MinHash. <br/>
+Ondov BD, Treangen TJ, Melsted P, Mallonee AB, Bergman NH, Koren S, Phillippy AM.
+Mash: fast genome and metagenome distance estimation using MinHash.
 Genome Biol. 2016 Jun 20;17(1):132. doi: 10.1186/s13059-016-0997-x
