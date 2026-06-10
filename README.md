@@ -85,8 +85,8 @@ using a minimal Python+R Conda environment and installing ReGAIN from source.
 5. Install AMRFinderPlus database: `amrfinder -u`
 
 Test ReGAIN installation: <br/>
-`regain -h`
-`regain --module-health`
+`regain -h` <br/>
+`regain --module-health` <br/>
 `amrfinder -h` # Test AMRFinderPlus install
 
 If these commands execute without error, the installation is successful.
