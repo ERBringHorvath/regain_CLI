@@ -80,14 +80,15 @@ using a minimal Python+R Conda environment and installing ReGAIN from source.
 ## Bioconda Installation
 
 1. If not done already, download [miniforge](https://github.com/conda-forge/miniforge/)
-2. `conda create -y -n regain-conda python=3.10 r-base=4.4`
+2. `conda create -y -n regain-cli`
 3. `source activate regain-conda`
-4. `conda install -y -c conda-forge -c bioconda regain-cli`
+4. `conda install -y -c conda-forge -c bioconda --strict-channel-priority regain-cli=1.8.0`
 5. Install AMRFinderPlus database: `amrfinder -u`
 
 Test ReGAIN installation: <br/>
 `regain -h`
 `regain --module-health`
+`amrfinder -h` # Test AMRFinderPlus install
 
 If these commands execute without error, the installation is successful.
 
