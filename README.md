@@ -207,7 +207,7 @@ If specific network visualization parameters are desired, see [Module 2](#standa
 
 ## Module 1.0 `regain AMR`
 
-`-f`, `--fasta-directory`, path to directory containing genome FASTA files to analyze <br/>|
+`-f`, `--fasta-directory`, path to directory containing genome FASTA files to analyze <br/>
 `--mode`, input FASTA file format (nucleotide, protein, combined (required protein FASTA + GFF file); default = nucleotide) <br/>
 `-O`, `--organism`, specify organism for AMRFinderPlus pipeline <br/>
 `-o`, `--output-dir`, output directory path <br/>
