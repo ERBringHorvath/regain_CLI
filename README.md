@@ -8,7 +8,7 @@ ________________________________________________________________________________
 ![R](https://img.shields.io/badge/R-%E2%89%A5%204-blue)
 [![License](https://img.shields.io/github/license/ERBringHorvath/regain_CLI?color=lavender)](./LICENSE)
 ![OS](https://img.shields.io/badge/platform-linux--64%20%7C%20osx--64%20%7C%20osx--arm64-red)
-[![Issues](https://img.shields.io/github/issues/ERBringHorvath/regain_CLI)](https://github.com/OWNER/REPO/issues)
+[![Issues](https://img.shields.io/github/issues/ERBringHorvath/regain_CLI)](https://github.com/ERBringHorvath/regain_CLI/issues)
 _________________________________________________________________________________
 # ReGAIN Overview
 Antimicrobial resistance is driven not only by single genes but by coordinated gene sets that co-occur and move on mobile elements, yet researchers lack a unified, reproducible way to quantify these patterns across genomic populations. The <ins>Re</ins>sistance <ins>G</ins>ene <ins>A</ins>ssociation and <ins>I</ins>nference <ins>N</ins>etwork (ReGAIN) is an open-source platform that utilizes Bayesian network structure learning to infer probabilistic co-occurrence among resistance and virulence genes in clinically important bacterial pathogens. ReGAIN delivers interpretable metrics (conditional probability, relative risk, absolute risk difference, confidence intervals) and post-hoc bidirectional probability scores, enabling detection of synergistic and mutually exclusive gene relationships. By standardizing analyses across species and studies, ReGAIN supports surveillance, hypothesis generation, and stewardship by highlighting gene constellations linked to multidrug resistance and potential co-selection of resistance determinants.
